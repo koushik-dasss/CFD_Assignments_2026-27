@@ -1,0 +1,87 @@
+Q1
+
+sudo docker --version
+
+sudo docker version
+
+sudo docker run hello-world
+
+
+Q2
+
+
+sudo docker pull nginx
+
+sudo docker run -d --name mynginx -p 8080:80 nginx
+
+sudo docker port mynginx
+
+sudo docker ps
+
+
+Q3
+
+
+sudo docker volume create studentdata
+
+sudo docker volume ls
+
+sudo docker run -it --name ubuntu1 -v studentdata:/data ubuntu bash
+
+cd /data
+
+pwd
+
+ls
+
+echo "Hello Docker" > test.txt
+
+ls 
+
+cat test.txt
+
+exit 
+
+
+Q4 
+
+sudo docker network create college-net
+
+sudo docker network ls
+
+sudo docker run -dit --name container1 --network college-net ubuntu bash
+
+sudo docker run -dit --name container2 --network college-net ubuntu bash
+
+sudo docker ps
+
+sudo docker network inspect college-net
+
+
+
+Q5
+
+sudo docker network inspect college-net
+
+sudo docker rm ubuntu1
+
+sudo docker ps -a
+
+sudo docker volume ls
+
+sudo docker run -it --name ubuntu2 -v studentdata:/data ubuntu bash
+
+cd /data
+
+ls
+
+cat test.txt
+
+
+
+
+
+
+
+
+
