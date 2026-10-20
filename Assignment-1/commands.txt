@@ -1,87 +1,62 @@
-Q1
+
+
+# Q1: Verify Docker installation and version
 
 sudo docker --version
-
 sudo docker version
-
 sudo docker run hello-world
 
 
-Q2
-
+# Q2: Run Nginx in detached mode with port mapping
 
 sudo docker pull nginx
-
 sudo docker run -d --name mynginx -p 8080:80 nginx
-
+sudo docker ps
 sudo docker port mynginx
 
-sudo docker ps
+# Open in browser:
+# http://localhost:8080
+
+# View container logs
+sudo docker logs mynginx
 
 
-Q3
-
+# Q3: Create a volume and mount it inside Ubuntu
 
 sudo docker volume create studentdata
-
 sudo docker volume ls
-
 sudo docker run -it --name ubuntu1 -v studentdata:/data ubuntu bash
 
+# Commands below run INSIDE the Ubuntu container
 cd /data
-
 pwd
-
 ls
-
 echo "Hello Docker" > test.txt
-
-ls 
-
+ls
 cat test.txt
+exit
 
-exit 
 
-
-Q4 
+# Q4: Create a Docker network and connect two containers
 
 sudo docker network create college-net
-
 sudo docker network ls
-
 sudo docker run -dit --name container1 --network college-net ubuntu bash
-
 sudo docker run -dit --name container2 --network college-net ubuntu bash
-
 sudo docker ps
-
 sudo docker network inspect college-net
 
 
-
-Q5
-
-sudo docker network inspect college-net
+# Q5: Verify volume persistence after removing a container
 
 sudo docker rm ubuntu1
-
 sudo docker ps -a
-
 sudo docker volume ls
-
 sudo docker run -it --name ubuntu2 -v studentdata:/data ubuntu bash
 
+# Commands below run INSIDE the Ubuntu container
 cd /data
-
 ls
-
 cat test.txt
-
-
-
-
-
-
-
-
+exit
 
