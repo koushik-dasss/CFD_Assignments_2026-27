@@ -1,0 +1,467 @@
+
+
+sudo docker network create wp-network
+4304261f2d8bdb4ee3de118874d6165ccd7a856d62dbd9a2824ee006b4e46303
+
+
+
+
+sudo docker network ls 
+NETWORK ID     NAME          DRIVER    SCOPE
+c56622d1bf60   bridge        bridge    local
+ce759436a4bf   college-net   bridge    local
+b998716ac223   host          host      local
+7ef5f347e19f   none          null      local
+4304261f2d8b   wp-network    bridge    local
+
+sudo docker network inspect wp-network
+[
+    {
+        "Name": "wp-network",
+        "Id": "4304261f2d8bdb4ee3de118874d6165ccd7a856d62dbd9a2824ee006b4e46303",
+        "Created": "2026-10-21T21:16:28.133047955+05:30",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "172.19.0.0/16",
+                    "IPRange": "",
+                    "Gateway": "172.19.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Options": {},
+        "Labels": {},
+        "Containers": {},
+        "Status": {
+            "IPAM": {
+                "Subnets": {
+                    "172.19.0.0/16": {
+                        "IPsInUse": 3,
+                        "DynamicIPsAvailable": 65533
+                    }
+                }
+            }
+        }
+    }
+]
+
+
+sudo docker run -d \
+  --name mariadb \
+  --network wp-network \
+  -e MARIADB_ROOT_PASSWORD='ChangeThisRootPassword' \
+  -e MARIADB_DATABASE=wordpress \
+  -e MARIADB_USER=wpuser \
+  -e MARIADB_PASSWORD='ChangeThisWpPassword' \
+  -v db-data:/var/lib/mysql \
+  mariadb:11
+
+
+
+Unable to find image 'mariadb:11' locally
+11: Pulling from library/mariadb
+f2b4ef06ff01: Pull complete 
+fa0f00198914: Pull complete 
+fb6a3511ccd2: Pull complete 
+2433f5e18ab4: Pull complete 
+0d12d24e8a65: Pull complete 
+6d390ecf53ba: Pull complete 
+03772237d6f0: Pull complete 
+2effa6ab704b: Pull complete 
+Digest: sha256:f16d7a344413e519dff518f27bdb221388f84b0d274c97c4fb5f2cb0dc1b34fa
+Status: Downloaded newer image for mariadb:11
+91e4a0736a156d8ca2f844ecf998c55079929a47eb4f0abf09e38639b7961e13
+
+
+sudo docker run -d \
+  --name wordpress \
+  --network wp-network \
+  -p 8080:80 \
+  -e WORDPRESS_DB_HOST=mariadb:3306 \
+  -e WORDPRESS_DB_NAME=wordpress \
+  -e WORDPRESS_DB_USER=wpuser \
+  -e WORDPRESS_DB_PASSWORD='ChangeThisWpPassword' \
+  wordpress:latest
+
+
+
+Unable to find image 'wordpress:latest' locally
+latest: Pulling from library/wordpress
+f2be67225471: Pull complete 
+6d4184e3cfe7: Pull complete 
+3aec87b76136: Pull complete 
+3640ac6240e2: Pull complete 
+877a52372274: Pull complete 
+37680fa725d6: Pull complete 
+1c2478525cf4: Pull complete 
+0e9f232032c5: Pull complete 
+663855fb86ec: Pull complete 
+814f4c685426: Pull complete 
+e53ff88c707c: Pull complete 
+21565422016f: Pull complete 
+47fc82951ad4: Pull complete 
+e2226d89d38c: Pull complete 
+4f4fb700ef54: Pull complete 
+89c437e349e4: Pull complete 
+53213e4d69b3: Pull complete 
+63c1ac1fbccf: Pull complete 
+b3595fd6bb6a: Pull complete 
+a23480ab089f: Pull complete 
+4324d26d00a2: Pull complete 
+e9c25635906b: Pull complete 
+cbe672453550: Pull complete 
+dfab353d1bb2: Pull complete 
+Digest: sha256:e4447d68aa14a2965d76a28d8276d8485d7f45904271dcff77466e8713882a47
+Status: Downloaded newer image for wordpress:latest
+f232403577ba798d998758533d9c849c74580a3f97f5c22a667addaa6896f778
+
+
+sudo docker ps
+
+CONTAINER ID   IMAGE              COMMAND                  CREATED          STATUS          PORTS                  NAMES
+f232403577ba   wordpress:latest   "docker-entrypoint.s…"   2 minutes ago    Up 2 minutes    0.0.0.0:8080->80/tcp   wordpress
+91e4a0736a15   mariadb:11         "docker-entrypoint.s…"   12 minutes ago   Up 12 minutes   3306/tcp               mariadb
+
+
+sudo docker network inspect wp-network
+
+[
+    {
+        "Name": "wp-network",
+        "Id": "4304261f2d8bdb4ee3de118874d6165ccd7a856d62dbd9a2824ee006b4e46303",
+        "Created": "2026-10-21T21:16:28.133047955+05:30",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "172.19.0.0/16",
+                    "IPRange": "",
+                    "Gateway": "172.19.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Options": {},
+        "Labels": {},
+        "Containers": {
+            "91e4a0736a156d8ca2f844ecf998c55079929a47eb4f0abf09e38639b7961e13": {
+                "Name": "mariadb",
+                "EndpointID": "18902fec6e87b893c1aad6ccf93d59e2aaedfcd02c039c7d54549f42a2d3bba1",
+                "MacAddress": "a6:26:6e:bf:3d:37",
+                "IPv4Address": "172.19.0.2/16",
+                "IPv6Address": ""
+            },
+            "f232403577ba798d998758533d9c849c74580a3f97f5c22a667addaa6896f778": {
+                "Name": "wordpress",
+                "EndpointID": "c252a57d0b19b43d2d17fbd20e7b8a3623ac5db53544f836bbdd2ee77d84b0b7",
+                "MacAddress": "aa:c7:fa:9d:3a:aa",
+                "IPv4Address": "172.19.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+        "Status": {
+            "IPAM": {
+                "Subnets": {
+                    "172.19.0.0/16": {
+                        "IPsInUse": 5,
+                        "DynamicIPsAvailable": 65531
+                    }
+                }
+            }
+        }
+    }
+]
+
+
+sudo docker logs mariadb
+
+2026-10-21 15:49:06+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:11.8.9+maria~ubu2404 started.
+2026-10-21 15:49:06+00:00 [Warn] [Entrypoint]: /sys/fs/cgroup///memory.pressure not writable, functionality unavailable to MariaDB
+2026-10-21 15:49:06+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+2026-10-21 15:49:06+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:11.8.9+maria~ubu2404 started.
+2026-10-21 15:49:06+00:00 [Note] [Entrypoint]: Initializing database files
+2026-10-21 15:49:06 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-10-21 15:49:07+00:00 [Note] [Entrypoint]: Database files initialized
+2026-10-21 15:49:07+00:00 [Note] [Entrypoint]: Starting temporary server
+2026-10-21 15:49:07+00:00 [Note] [Entrypoint]: Waiting for server startup
+2026-10-21 15:49:07 0 [Note] Starting MariaDB 11.8.9-MariaDB-ubu2404 source revision bf9193a939f515e95dd8def1a5468088c91cede6 server_uid BH824VZ4v+WDt4tnynso3LS9nyo= as process 90
+2026-10-21 15:49:07 0 [Note] InnoDB: Compressed tables use zlib 1.3
+2026-10-21 15:49:07 0 [Note] InnoDB: Number of transaction pools: 1
+2026-10-21 15:49:07 0 [Note] InnoDB: Using AVX512 instructions
+2026-10-21 15:49:07 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-10-21 15:49:07 0 [Note] InnoDB: Using Linux native AIO
+2026-10-21 15:49:07 0 [Note] InnoDB: innodb_buffer_pool_size_max=8388608m, innodb_buffer_pool_size=128m
+2026-10-21 15:49:07 0 [Note] InnoDB: Completed initialization of buffer pool
+2026-10-21 15:49:07 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+2026-10-21 15:49:07 0 [Note] InnoDB: End of log at LSN=45093
+2026-10-21 15:49:07 0 [Note] InnoDB: Opened 3 undo tablespaces
+2026-10-21 15:49:07 0 [Note] InnoDB: 128 rollback segments in 3 undo tablespaces are active.
+2026-10-21 15:49:07 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+2026-10-21 15:49:07 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+2026-10-21 15:49:07 0 [Note] InnoDB: log sequence number 45093; transaction id 14
+2026-10-21 15:49:07 0 [Note] Plugin 'FEEDBACK' is disabled.
+2026-10-21 15:49:07 0 [Note] Plugin 'wsrep-provider' is disabled.
+2026-10-21 15:49:08 0 [Note] mariadbd: Event Scheduler: Loaded 0 events
+2026-10-21 15:49:08 0 [Note] mariadbd: ready for connections.
+Version: '11.8.9-MariaDB-ubu2404'  socket: '/run/mysqld/mysqld.sock'  port: 0  mariadb.org binary distribution
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Temporary server started.
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Creating database wordpress
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Creating user wpuser
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Giving user wpuser access to schema wordpress
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Securing system users (equivalent to running mysql_secure_installation)
+
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Stopping temporary server
+2026-10-21 15:49:08 0 [Note] mariadbd (initiated by: unknown): Normal shutdown
+2026-10-21 15:49:08 0 [Note] InnoDB: FTS optimize thread exiting.
+2026-10-21 15:49:08 0 [Note] InnoDB: Starting shutdown...
+2026-10-21 15:49:08 0 [Note] InnoDB: Dumping buffer pool(s) to /var/lib/mysql/ib_buffer_pool
+2026-10-21 15:49:08 0 [Note] InnoDB: Buffer pool(s) dump completed at 261021 15:49:08
+2026-10-21 15:49:08 0 [Note] InnoDB: Removed temporary tablespace data file: "./ibtmp1"
+2026-10-21 15:49:08 0 [Note] Shutdown completed; log sequence number 45450; transaction id 15
+2026-10-21 15:49:08 0 [Note] mariadbd: Shutdown complete
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: Temporary server stopped
+
+2026-10-21 15:49:08+00:00 [Note] [Entrypoint]: MariaDB init process done. Ready for start up.
+
+2026-10-21 15:49:08 0 [Note] Starting MariaDB 11.8.9-MariaDB-ubu2404 source revision bf9193a939f515e95dd8def1a5468088c91cede6 server_uid BH824VZ4v+WDt4tnynso3LS9nyo= as process 1
+2026-10-21 15:49:08 0 [Note] InnoDB: Compressed tables use zlib 1.3
+2026-10-21 15:49:08 0 [Note] InnoDB: Number of transaction pools: 1
+2026-10-21 15:49:08 0 [Note] InnoDB: Using AVX512 instructions
+2026-10-21 15:49:08 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-10-21 15:49:08 0 [Note] InnoDB: Using Linux native AIO
+2026-10-21 15:49:08 0 [Note] InnoDB: innodb_buffer_pool_size_max=8388608m, innodb_buffer_pool_size=128m
+2026-10-21 15:49:08 0 [Note] InnoDB: Completed initialization of buffer pool
+2026-10-21 15:49:08 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+2026-10-21 15:49:08 0 [Note] InnoDB: End of log at LSN=45450
+2026-10-21 15:49:08 0 [Note] InnoDB: Opened 3 undo tablespaces
+2026-10-21 15:49:08 0 [Note] InnoDB: 128 rollback segments in 3 undo tablespaces are active.
+2026-10-21 15:49:08 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+2026-10-21 15:49:08 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+2026-10-21 15:49:08 0 [Note] InnoDB: log sequence number 45450; transaction id 15
+2026-10-21 15:49:08 0 [Note] InnoDB: Loading buffer pool(s) from /var/lib/mysql/ib_buffer_pool
+2026-10-21 15:49:08 0 [Note] Plugin 'FEEDBACK' is disabled.
+2026-10-21 15:49:08 0 [Note] Plugin 'wsrep-provider' is disabled.
+2026-10-21 15:49:08 0 [Note] InnoDB: Buffer pool(s) load completed at 261021 15:49:08
+2026-10-21 15:49:11 0 [Note] Server socket created on IP: '0.0.0.0', port: '3306'.
+2026-10-21 15:49:11 0 [Note] Server socket created on IP: '::', port: '3306'.
+2026-10-21 15:49:11 0 [Note] mariadbd: Event Scheduler: Loaded 0 events
+2026-10-21 15:49:11 0 [Note] mariadbd: ready for connections.
+Version: '11.8.9-MariaDB-ubu2404'  socket: '/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution
+
+
+sudo docker logs wordpress
+
+WordPress not found in /var/www/html - copying now...
+Complete! WordPress has been successfully copied to /var/www/html
+No 'wp-config.php' found in /var/www/html, but 'WORDPRESS_...' variables supplied; copying 'wp-config-docker.php' (WORDPRESS_DB_HOST WORDPRESS_DB_NAME WORDPRESS_DB_PASSWORD WORDPRESS_DB_USER)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.3. Set the 'ServerName' directive globally to suppress this message
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.3. Set the 'ServerName' directive globally to suppress this message
+[Wed Oct 21 15:59:06.323956 2026] [mpm_prefork:notice] [pid 1:tid 1] AH00163: Apache/2.4.69 (Debian) PHP/8.3.35 configured -- resuming normal operations
+[Wed Oct 21 15:59:06.323980 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'apache2 -D FOREGROUND'
+
+
+
+sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mariadb
+
+172.19.0.2
+
+sudo docker exec wordpress getent hosts mariadb
+
+172.19.0.2 mariadb 
+
+sudo docker rm -f mariadb
+
+mariadb 
+
+sudo docker logs wordpress
+
+WordPress not found in /var/www/html - copying now...
+Complete! WordPress has been successfully copied to /var/www/html
+No 'wp-config.php' found in /var/www/html, but 'WORDPRESS_...' variables supplied; copying 'wp-config-docker.php' (WORDPRESS_DB_HOST WORDPRESS_DB_NAME WORDPRESS_DB_PASSWORD WORDPRESS_DB_USER)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.3. Set the 'ServerName' directive globally to suppress this message
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.3. Set the 'ServerName' directive globally to suppress this message
+[Wed Oct 21 15:59:06.323956 2026] [mpm_prefork:notice] [pid 1:tid 1] AH00163: Apache/2.4.69 (Debian) PHP/8.3.35 configured -- resuming normal operations
+[Wed Oct 21 15:59:06.323980 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'apache2 -D FOREGROUND'
+172.19.0.1 - - [21/Oct/2026:16:16:37 +0000] "GET / HTTP/1.1" 302 424 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:37 +0000] "GET /wp-admin/install.php HTTP/1.1" 200 4786 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/css/buttons.min.css?ver=7.1.3 HTTP/1.1" 200 1996 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/css/dashicons.min.css?ver=7.1.3 HTTP/1.1" 200 36059 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/css/l10n.min.css?ver=7.1.3 HTTP/1.1" 200 1102 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/css/forms.min.css?ver=7.1.3 HTTP/1.1" 200 7185 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/css/dist/base-styles/admin-schemes.min.css?ver=7.1.3 HTTP/1.1" 200 1133 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/css/install.min.css?ver=7.1.3 HTTP/1.1" 200 2190 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1 HTTP/1.1" 200 5216 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/js/language-chooser.min.js?ver=7.1.3 HTTP/1.1" 200 615 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/js/jquery/jquery.min.js?ver=3.7.1 HTTP/1.1" 200 30714 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/images/wordpress-logo-gray.svg?ver=20260303 HTTP/1.1" 200 1810 "http://localhost:8080/wp-admin/css/install.min.css?ver=7.1.3" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/images/spinner.gif HTTP/1.1" 200 3941 "http://localhost:8080/wp-admin/css/install.min.css?ver=7.1.3" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /favicon.ico HTTP/1.1" 302 423 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:40 +0000] "GET /wp-admin/images/spinner-2x.gif HTTP/1.1" 200 7823 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/install.php HTTP/1.1" 200 4786 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:32 +0000] "-" 408 0 "-" "-"
+127.0.0.1 - - [21/Oct/2026:16:17:34 +0000] "OPTIONS * HTTP/1.0" 200 126 "-" "Apache/2.4.69 (Debian) PHP/8.3.35 (internal dummy connection)"
+172.19.0.1 - - [21/Oct/2026:16:46:31 +0000] "GET / HTTP/1.1" 500 2808 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:46:31 +0000] "GET /favicon.ico HTTP/1.1" 500 2808 "http://localhost:8080/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+
+
+
+sudo docker run -d \
+  --name mariadb \
+  --network wp-network \
+  -e MARIADB_ROOT_PASSWORD='YOUR_EXISTING_ROOT_PASSWORD' \
+  -e MARIADB_DATABASE=wordpress \
+  -e MARIADB_USER=wpuser \
+  -e MARIADB_PASSWORD='ChangeThisWpPassword' \
+  -v db-data:/var/lib/mysql \
+  mariadb:11
+
+
+3a1ab74a31c4ae39e9854fec2ae2b61c55b9484751367d03865e7ffbf0eb0ba1
+
+sudo docker ps 
+
+CONTAINER ID   IMAGE              COMMAND                  CREATED          STATUS          PORTS                  NAMES
+3a1ab74a31c4   mariadb:11         "docker-entrypoint.s…"   35 seconds ago   Up 35 seconds   3306/tcp               mariadb
+f232403577ba   wordpress:latest   "docker-entrypoint.s…"   53 minutes ago   Up 53 minutes   0.0.0.0:8080->80/tcp   wordpress
+
+
+sudo docker logs mariadb
+
+
+2026-10-21 16:51:59+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:11.8.9+maria~ubu2404 started.
+2026-10-21 16:51:59+00:00 [Warn] [Entrypoint]: /sys/fs/cgroup///memory.pressure not writable, functionality unavailable to MariaDB
+2026-10-21 16:51:59+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+2026-10-21 16:51:59+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:11.8.9+maria~ubu2404 started.
+2026-10-21 16:51:59+00:00 [Note] [Entrypoint]: MariaDB upgrade not required
+2026-10-21 16:51:59 0 [Note] Starting MariaDB 11.8.9-MariaDB-ubu2404 source revision bf9193a939f515e95dd8def1a5468088c91cede6 server_uid Wp9vWNa8bz5MTzx1Y4U7tZszVoU= as process 1
+2026-10-21 16:52:00 0 [Note] InnoDB: Compressed tables use zlib 1.3
+2026-10-21 16:52:00 0 [Note] InnoDB: Number of transaction pools: 1
+2026-10-21 16:52:00 0 [Note] InnoDB: Using AVX512 instructions
+2026-10-21 16:52:00 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+create_uring failed: falling back to libaio
+2026-10-21 16:52:00 0 [Note] InnoDB: Using Linux native AIO
+2026-10-21 16:52:00 0 [Note] InnoDB: innodb_buffer_pool_size_max=8388608m, innodb_buffer_pool_size=128m
+2026-10-21 16:52:00 0 [Note] InnoDB: Completed initialization of buffer pool
+2026-10-21 16:52:00 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+2026-10-21 16:52:00 0 [Note] InnoDB: End of log at LSN=45450
+2026-10-21 16:52:00 0 [Note] InnoDB: Opened 3 undo tablespaces
+2026-10-21 16:52:00 0 [Note] InnoDB: 128 rollback segments in 3 undo tablespaces are active.
+2026-10-21 16:52:00 0 [Note] InnoDB: Removed temporary tablespace data file: "./ibtmp1"
+2026-10-21 16:52:00 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+2026-10-21 16:52:00 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+2026-10-21 16:52:00 0 [Note] InnoDB: log sequence number 45450; transaction id 15
+2026-10-21 16:52:00 0 [Note] InnoDB: Loading buffer pool(s) from /var/lib/mysql/ib_buffer_pool
+2026-10-21 16:52:00 0 [Note] Plugin 'FEEDBACK' is disabled.
+2026-10-21 16:52:00 0 [Note] Plugin 'wsrep-provider' is disabled.
+2026-10-21 16:52:00 0 [Note] Recovering after a crash using tc.log
+2026-10-21 16:52:00 0 [Note] Starting table crash recovery...
+2026-10-21 16:52:00 0 [Note] InnoDB: Buffer pool(s) load completed at 261021 16:52:00
+2026-10-21 16:52:00 0 [Note] Crash table recovery finished.
+2026-10-21 16:52:01 0 [Note] Server socket created on IP: '0.0.0.0', port: '3306'.
+2026-10-21 16:52:01 0 [Note] Server socket created on IP: '::', port: '3306'.
+2026-10-21 16:52:01 0 [Note] mariadbd: Event Scheduler: Loaded 0 events
+2026-10-21 16:52:01 0 [Note] mariadbd: ready for connections.
+Version: '11.8.9-MariaDB-ubu2404'  socket: '/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution
+
+
+sudo docker exec wordpress getent hosts mariadb
+
+172.19.0.2      mariadb
+
+
+sudo docker logs --tail 50 wordpress
+
+WordPress not found in /var/www/html - copying now...
+Complete! WordPress has been successfully copied to /var/www/html
+No 'wp-config.php' found in /var/www/html, but 'WORDPRESS_...' variables supplied; copying 'wp-config-docker.php' (WORDPRESS_DB_HOST WORDPRESS_DB_NAME WORDPRESS_DB_PASSWORD WORDPRESS_DB_USER)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.3. Set the 'ServerName' directive globally to suppress this message
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.3. Set the 'ServerName' directive globally to suppress this message
+[Wed Oct 21 15:59:06.323956 2026] [mpm_prefork:notice] [pid 1:tid 1] AH00163: Apache/2.4.69 (Debian) PHP/8.3.35 configured -- resuming normal operations
+[Wed Oct 21 15:59:06.323980 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'apache2 -D FOREGROUND'
+172.19.0.1 - - [21/Oct/2026:16:16:37 +0000] "GET / HTTP/1.1" 302 424 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:37 +0000] "GET /wp-admin/install.php HTTP/1.1" 200 4786 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/css/buttons.min.css?ver=7.1.3 HTTP/1.1" 200 1996 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/css/dashicons.min.css?ver=7.1.3 HTTP/1.1" 200 36059 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/css/l10n.min.css?ver=7.1.3 HTTP/1.1" 200 1102 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/css/forms.min.css?ver=7.1.3 HTTP/1.1" 200 7185 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/css/dist/base-styles/admin-schemes.min.css?ver=7.1.3 HTTP/1.1" 200 1133 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/css/install.min.css?ver=7.1.3 HTTP/1.1" 200 2190 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1 HTTP/1.1" 200 5216 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/js/language-chooser.min.js?ver=7.1.3 HTTP/1.1" 200 615 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-includes/js/jquery/jquery.min.js?ver=3.7.1 HTTP/1.1" 200 30714 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/images/wordpress-logo-gray.svg?ver=20260303 HTTP/1.1" 200 1810 "http://localhost:8080/wp-admin/css/install.min.css?ver=7.1.3" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/images/spinner.gif HTTP/1.1" 200 3941 "http://localhost:8080/wp-admin/css/install.min.css?ver=7.1.3" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /favicon.ico HTTP/1.1" 302 423 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:40 +0000] "GET /wp-admin/images/spinner-2x.gif HTTP/1.1" 200 7823 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:16:39 +0000] "GET /wp-admin/install.php HTTP/1.1" 200 4786 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:31 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:17:32 +0000] "-" 408 0 "-" "-"
+127.0.0.1 - - [21/Oct/2026:16:17:34 +0000] "OPTIONS * HTTP/1.0" 200 126 "-" "Apache/2.4.69 (Debian) PHP/8.3.35 (internal dummy connection)"
+172.19.0.1 - - [21/Oct/2026:16:46:31 +0000] "GET / HTTP/1.1" 500 2808 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:46:31 +0000] "GET /favicon.ico HTTP/1.1" 500 2808 "http://localhost:8080/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:47:23 +0000] "-" 408 0 "-" "-"
+172.19.0.1 - - [21/Oct/2026:16:54:08 +0000] "GET / HTTP/1.1" 302 424 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:54:08 +0000] "GET /wp-admin/install.php HTTP/1.1" 200 4786 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:54:09 +0000] "GET /favicon.ico HTTP/1.1" 302 423 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+172.19.0.1 - - [21/Oct/2026:16:54:10 +0000] "GET /wp-admin/install.php HTTP/1.1" 200 4786 "http://localhost:8080/wp-admin/install.php" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+
+
+sudo docker volume inspect db-data
+
+
+[
+    {
+        "CreatedAt": "2026-10-21T21:19:05+05:30",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/db-data/_data",
+        "Name": "db-data",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+
+
+
+
+
+
+
+
+
+
+
