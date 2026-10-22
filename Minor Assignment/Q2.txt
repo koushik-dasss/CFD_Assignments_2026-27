@@ -1,0 +1,90 @@
+mkdir docker-secret-assignment
+
+cd  docker-secret-assignment
+
+printf '%s' 'MySecurePassword123' > password.txt
+
+cat password.txt
+Output=> MySecurePassword123
+
+cat > compose.yaml
+
+
+services:
+  alpine-secret:
+    image: alpine:3.22
+    command: ["sh", "-c", "cat /run/secrets/db_password"]
+    secrets:
+      - db_password
+
+secrets:
+  db_password:
+    file: ./password.txt
+
+
+sudo docker compose up
+
+Attaching to alpine-secret-1
+alpine-secret-1  | MySecurePassword123
+alpine-secret-1 exited with code 0
+
+
+sudo docker compose config
+
+name: docker-secret-assignment
+services:
+  alpine-secret:
+    command:
+      - sh
+      - -c
+      - cat /run/secrets/db_password
+    image: alpine:3.22
+    networks:
+      default: null
+    secrets:
+      - source: db_password
+        target: /run/secrets/db_password
+networks:
+  default:
+    name: docker-secret-assignment_default
+secrets:
+  db_password:
+    name: docker-secret-assignment_db_password
+
+sudo docker compose run --rm alpine-secret
+
+
+[+] run 1/1
+ ✔ Network docker-secret-assignment_default Created                                                                                                                                 0.0s
+Container docker-secret-assignment-alpine-secret-run-f95661df155b Creating 
+Container docker-secret-assignment-alpine-secret-run-f95661df155b Created 
+
+
+sudo docker compose up
+
+[+] up 1/1
+ ✔ Container docker-secret-assignment-alpine-secret-1 Created                                                                                                                       0.0s
+Attaching to alpine-secret-1
+alpine-secret-1  | MySecurePassword123
+alpine-secret-1 exited with code 0
+
+sudo docker compose ps -a
+
+
+NAME                                       IMAGE         COMMAND                  SERVICE         CREATED          STATUS                      PORTS
+docker-secret-assignment-alpine-secret-1   alpine:3.22   "sh -c 'cat /run/sec…"   alpine-secret   12 seconds ago   Exited (0) 11 seconds ago  
+
+sudo docker compose down 
+
+[+] down 2/2
+ ✔ Container docker-secret-assignment-alpine-secret-1 Removed                                                                                                                       0.0s
+ ✔ Network docker-secret-assignment_default           Removed  
+
+ 
+
+
+
+
+
+
+
