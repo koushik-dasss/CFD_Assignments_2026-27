@@ -1,0 +1,12 @@
+
+services:
+  alpine-secret:
+    image: alpine:3.22
+    command: ["sh", "-c", "cat /run/secrets/db_password"]
+    secrets:
+      - db_password
+
+secrets:
+  db_password:
+    file: ./password.txt
+
