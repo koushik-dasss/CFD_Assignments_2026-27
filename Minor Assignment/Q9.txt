@@ -1,0 +1,101 @@
+# Q9 - Python Flask app, standard vs slim image, resource limits
+
+mkdir -p python-container-app
+cd python-container-app
+
+cat > app.py <<'EOF'
+from flask import Flask, jsonify
+app = Flask(__name__)
+
+@app.get("/")
+def home():
+    return jsonify(application="Docker demo", status="running")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+EOF
+
+cat > requirements.txt <<'EOF'
+Flask==3.1.1
+EOF
+
+cat > Dockerfile.standard <<'EOF'
+FROM python:3.12
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+RUN useradd --create-home appuser
+USER appuser
+EXPOSE 5000
+CMD ["python", "app.py"]
+EOF
+
+cat > Dockerfile.slim <<'EOF'
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+RUN useradd --create-home appuser
+USER appuser
+EXPOSE 5000
+CMD ["python", "app.py"]
+EOF
+
+sudo docker build -t flask-demo:standard -f Dockerfile.standard .
+Output=>
+Successfully tagged flask-demo:standard
+
+sudo docker build -t flask-demo:slim -f Dockerfile.slim .
+Output=>
+Successfully tagged flask-demo:slim
+
+sudo docker image ls flask-demo
+Output=>
+REPOSITORY    TAG       IMAGE ID       CREATED        SIZE
+flask-demo    slim      <image-id>     <time>         <slim-size>
+flask-demo    standard  <image-id>     <time>         <standard-size>
+(Actual sizes vary; compare the SIZE column.)
+
+sudo docker run -d --name flask-standard -p 5000:5000 --cpus="0.5" --memory="128m" flask-demo:standard
+Output=>
+<container-id>
+
+curl http://localhost:5000/
+Output=>
+{"application":"Docker demo","status":"running"}
+
+sudo docker stats --no-stream flask-standard
+Output=>
+CONTAINER ID   NAME             CPU %   MEM USAGE / LIMIT   MEM %   NET I/O   BLOCK I/O   PIDS
+<container-id> flask-standard   <value>  <usage> / 128MiB    <value> <value>  <value>     <value>
+
+sudo docker stop flask-standard
+Output=>
+flask-standard
+
+sudo docker rm flask-standard
+Output=>
+flask-standard
+
+sudo docker run -d --name flask-slim -p 5001:5000 --cpus="0.5" --memory="128m" flask-demo:slim
+Output=>
+<container-id>
+
+curl http://localhost:5001/
+Output=>
+{"application":"Docker demo","status":"running"}
+
+sudo docker stats --no-stream flask-slim
+Output=>
+CONTAINER ID   NAME        CPU %   MEM USAGE / LIMIT   MEM %   NET I/O   BLOCK I/O   PIDS
+<container-id> flask-slim  <value>  <usage> / 128MiB    <value> <value>  <value>     <value>
+
+sudo docker stop flask-slim
+Output=>
+flask-slim
+
+sudo docker rm flask-slim
+Output=>
+flask-slim

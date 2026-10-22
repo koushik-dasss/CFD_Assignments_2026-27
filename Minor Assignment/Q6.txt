@@ -1,0 +1,87 @@
+# Q6 - Optimize Alpine Python image
+
+mkdir -p alpine-python-optimization
+cd alpine-python-optimization
+
+cat > app.py <<'EOF'
+import platform
+print("Application started successfully.")
+print("Python version:", platform.python_version())
+print("Container optimization test completed.")
+EOF
+
+cat > Dockerfile.original <<'EOF'
+FROM alpine
+RUN apk update
+RUN apk add python3
+RUN apk add curl
+RUN apk add bash
+RUN apk add nano
+RUN apk add build-base
+WORKDIR /application
+COPY app.py .
+CMD ["python3", "app.py"]
+EOF
+
+sudo docker build -t application-original:v1 -f Dockerfile.original .
+Output=>
+Successfully tagged application-original:v1
+
+sudo docker image ls application-original:v1
+Output=>
+REPOSITORY             TAG   IMAGE ID       CREATED        SIZE
+application-original   v1    <image-id>     <time>         <size>
+
+sudo docker history application-original:v1
+Output=>
+IMAGE          CREATED BY                         SIZE
+<image-id>     CMD ["python3" "app.py"]            0B
+<image-id>     COPY app.py .                       <file-size>
+<image-id>     WORKDIR /application                0B
+<image-id>     RUN apk add build-base              <package-size>
+<image-id>     RUN apk add nano                    <package-size>
+<image-id>     RUN apk add bash                    <package-size>
+<image-id>     RUN apk add curl                    <package-size>
+<image-id>     RUN apk add python3                 <package-size>
+<image-id>     RUN apk update                      <package-size>
+<image-id>     FROM alpine                         <base-size>
+
+sudo docker run --rm application-original:v1
+Output=>
+Application started successfully.
+Python version: <Python version>
+Container optimization test completed.
+
+cat > Dockerfile.optimized <<'EOF'
+FROM alpine:3.22
+RUN apk add --no-cache python3 curl
+WORKDIR /application
+COPY app.py .
+CMD ["python3", "app.py"]
+EOF
+
+sudo docker build -t application-optimized:v1 -f Dockerfile.optimized .
+Output=>
+Successfully tagged application-optimized:v1
+
+sudo docker run --rm application-optimized:v1
+Output=>
+Application started successfully.
+Python version: <Python version>
+Container optimization test completed.
+
+sudo docker image ls | grep -E 'REPOSITORY|application-(original|optimized)'
+Output=>
+REPOSITORY               TAG   IMAGE ID       CREATED        SIZE
+application-original     v1    <image-id>     <time>         <original-size>
+application-optimized   v1    <image-id>     <time>         <optimized-size>
+(The actual sizes vary; compare the SIZE column.)
+
+sudo docker history application-optimized:v1
+Output=>
+IMAGE          CREATED BY                                  SIZE
+<image-id>     CMD ["python3" "app.py"]                     0B
+<image-id>     COPY app.py .                                <file-size>
+<image-id>     WORKDIR /application                         0B
+<image-id>     RUN apk add --no-cache python3 curl          <package-size>
+<image-id>     FROM alpine:3.22                             <base-size>

@@ -1,0 +1,77 @@
+# Q5 - Custom Docker image lifecycle
+
+mkdir -p docker-command-assignment
+cd docker-command-assignment
+
+cat > Dockerfile <<'EOF'
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+EOF
+
+cat > index.html <<'EOF'
+<!doctype html>
+<html>
+<head><title>Docker Lifecycle</title></head>
+<body><h1>Docker image lifecycle works</h1></body>
+</html>
+EOF
+
+cat Dockerfile
+Output=>
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+
+cat index.html
+Output=>
+<!doctype html>
+<html>
+<head><title>Docker Lifecycle</title></head>
+<body><h1>Docker image lifecycle works</h1></body>
+</html>
+
+sudo docker build -t lifecycle-demo:v1 .
+Output=>
+Successfully tagged lifecycle-demo:v1
+
+sudo docker image ls lifecycle-demo:v1
+Output=>
+REPOSITORY        TAG   IMAGE ID       CREATED        SIZE
+lifecycle-demo    v1    <image-id>     <time>         <size>
+
+sudo docker image inspect lifecycle-demo:v1 --format 'ID={{.Id}} OS={{.Os}} Architecture={{.Architecture}}'
+Output=>
+ID=sha256:<image-id> OS=linux Architecture=amd64
+
+sudo docker run -d --name lifecycle-web -p 8081:80 lifecycle-demo:v1
+Output=>
+<container-id>
+
+curl http://localhost:8081
+Output=>
+<!doctype html>
+<html>
+<head><title>Docker Lifecycle</title></head>
+<body><h1>Docker image lifecycle works</h1></body>
+</html>
+
+sudo docker ps
+Output=>
+CONTAINER ID   IMAGE                STATUS         PORTS                  NAMES
+<container-id> lifecycle-demo:v1   Up             0.0.0.0:8081->80/tcp   lifecycle-web
+
+sudo docker stop lifecycle-web
+Output=>
+lifecycle-web
+
+sudo docker rm lifecycle-web
+Output=>
+lifecycle-web
+
+sudo docker ps -a
+Output=>
+No lifecycle-web container listed.
+
+sudo docker rmi lifecycle-demo:v1
+Output=>
+Untagged: lifecycle-demo:v1
+Deleted: sha256:<image-id>

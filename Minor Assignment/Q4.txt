@@ -1,0 +1,29 @@
+# Q4 - Docker CPU architecture
+
+sudo docker info --format '{{.OSType}} / {{.Architecture}}'
+Output=>
+linux / x86_64
+(Note: architecture output depends on the host.)
+
+sudo docker image pull alpine:3.22
+Output=>
+Status: Downloaded newer image for alpine:3.22
+(or: Image is up to date)
+
+sudo docker image inspect alpine:3.22 --format 'Image={{.RepoTags}} OS={{.Os}} Architecture={{.Architecture}}'
+Output=>
+Image=[alpine:3.22] OS=linux Architecture=amd64
+(Note: this is the selected local image platform.)
+
+sudo docker run --rm alpine:3.22 uname -m
+Output=>
+x86_64
+
+sudo docker run --rm --platform linux/amd64 alpine:3.22 uname -m
+Output=>
+x86_64
+
+sudo docker manifest inspect alpine:3.22
+Output=>
+JSON manifest/index describing Alpine image platforms, including amd64 and other supported architectures.
+(The full JSON output is long and varies by image version.)

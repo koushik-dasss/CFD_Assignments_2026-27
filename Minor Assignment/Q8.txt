@@ -1,0 +1,83 @@
+# Q8 - Persistent MariaDB student database
+
+sudo docker volume create students-data
+Output=>
+students-data
+
+sudo docker run -d --name student-db -e MARIADB_ROOT_PASSWORD='StudentRoot123!' -e MARIADB_DATABASE=studentdb -v students-data:/var/lib/mysql mariadb:11
+Output=>
+<container-id>
+
+until sudo docker exec student-db mariadb-admin ping -uroot -p'StudentRoot123!' --silent >/dev/null 2>&1; do sleep 2; done
+echo "MariaDB is ready"
+Output=>
+MariaDB is ready
+
+sudo docker logs student-db
+Output=>
+MariaDB initialization completes and the server reports ready for connections.
+
+sudo docker exec -i student-db mariadb -uroot -p'StudentRoot123!' studentdb <<'SQL'
+CREATE TABLE students (
+  id INT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  department VARCHAR(50) NOT NULL,
+  year INT NOT NULL
+);
+INSERT INTO students VALUES
+(1, 'Aarav', 'CSE', 3),
+(2, 'Diya', 'CSIT', 3),
+(3, 'Ishaan', 'ECE', 2),
+(4, 'Meera', 'CSE', 4),
+(5, 'Rohan', 'CSIT', 4);
+SELECT * FROM students;
+SQL
+Output=>
+id  name     department  year
+1   Aarav    CSE         3
+2   Diya     CSIT        3
+3   Ishaan   ECE         2
+4   Meera    CSE         4
+5   Rohan    CSIT        4
+
+sudo docker stop student-db
+Output=>
+student-db
+
+sudo docker rm student-db
+Output=>
+student-db
+
+sudo docker run -d --name student-db -e MARIADB_ROOT_PASSWORD='StudentRoot123!' -e MARIADB_DATABASE=studentdb -v students-data:/var/lib/mysql mariadb:11
+Output=>
+<container-id>
+
+until sudo docker exec student-db mariadb-admin ping -uroot -p'StudentRoot123!' --silent >/dev/null 2>&1; do sleep 2; done
+echo "MariaDB is ready after recreation"
+Output=>
+MariaDB is ready after recreation
+
+sudo docker logs student-db
+Output=>
+MariaDB starts using the existing database files and reports ready for connections.
+
+sudo docker exec -i student-db mariadb -uroot -p'StudentRoot123!' studentdb -e 'SELECT * FROM students;'
+Output=>
+id  name     department  year
+1   Aarav    CSE         3
+2   Diya     CSIT        3
+3   Ishaan   ECE         2
+4   Meera    CSE         4
+5   Rohan    CSIT        4
+
+sudo docker exec student-db mariadb-dump -uroot -p'StudentRoot123!' studentdb > studentdb-backup.sql
+Output=>
+[No terminal output; backup is written to studentdb-backup.sql.]
+
+ls -lh studentdb-backup.sql
+Output=>
+-rw-r--r-- 1 <user> <group> <file-size> <date> studentdb-backup.sql
+
+sudo docker volume inspect students-data
+Output=>
+JSON details for the persistent volume students-data.

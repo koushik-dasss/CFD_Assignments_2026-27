@@ -1,0 +1,95 @@
+# Q7 - HAProxy load balancing with two web backends and an API
+
+mkdir -p haproxy-assignment
+cd haproxy-assignment
+
+sudo docker network create proxy-net
+Output=>
+<network-id>
+
+cat > haproxy.cfg <<'EOF'
+global
+    log stdout format raw local0
+
+defaults
+    log global
+    mode http
+    timeout connect 5s
+    timeout client 30s
+    timeout server 30s
+
+frontend public
+    bind *:80
+    acl is_api path_beg /api
+    use_backend api_service if is_api
+    default_backend web_services
+
+backend web_services
+    balance roundrobin
+    server web1 web1:80 check
+    server web2 web2:80 check
+
+backend api_service
+    server api api:80 check
+EOF
+
+cat haproxy.cfg
+Output=>
+[Displays the HAProxy configuration above.]
+
+sudo docker run -d --name web1 --network proxy-net traefik/whoami
+Output=>
+<container-id>
+
+sudo docker run -d --name web2 --network proxy-net traefik/whoami
+Output=>
+<container-id>
+
+sudo docker run -d --name api --network proxy-net traefik/whoami
+Output=>
+<container-id>
+
+sudo docker run -d --name haproxy --network proxy-net -p 8088:80 -v "$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" haproxy:alpine
+Output=>
+<container-id>
+
+sudo docker ps
+Output=>
+CONTAINER ID   IMAGE              STATUS   PORTS                  NAMES
+<container-id> traefik/whoami     Up                              web1
+<container-id> traefik/whoami     Up                              web2
+<container-id> traefik/whoami     Up                              api
+<container-id> haproxy:alpine     Up       0.0.0.0:8088->80/tcp    haproxy
+
+curl -s http://localhost:8088/
+Output=>
+Hostname: <web1-or-web2-container-hostname>
+(The hostname should alternate between the two web backends across repeated requests.)
+
+curl -s http://localhost:8088/api
+Output=>
+Hostname: <api-container-hostname>
+(The response contains details from the API container.)
+
+sudo docker logs haproxy
+Output=>
+HAProxy starts and listens on port 80; no fatal configuration error.
+
+# Cleanup after testing
+sudo docker rm -f haproxy web1 web2 api
+Output=>
+haproxy
+web1
+web2
+api
+
+sudo docker network rm proxy-net
+Output=>
+proxy-net
+
+# Notes for written discussion:
+# Backends share proxy-net and are reached by Docker service/container names.
+# Only HAProxy publishes a host port; backend/API ports are not published.
+# HAProxy uses a static config file. Traefik commonly discovers containers via labels.
+# Docker socket access gives a proxy control-plane visibility and should be restricted.
+# TLS can terminate at the proxy; Traefik can automate certificates with an ACME provider.

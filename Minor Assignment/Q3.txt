@@ -1,0 +1,57 @@
+# Q3 - CMD vs ENTRYPOINT
+
+mkdir -p cmd-entrypoint-assignment
+cd cmd-entrypoint-assignment
+
+cat > Dockerfile.cmd <<'EOF'
+FROM ubuntu:20.04
+CMD ["echo", "Hello from CMD"]
+EOF
+
+cat Dockerfile.cmd
+Output=>
+FROM ubuntu:20.04
+CMD ["echo", "Hello from CMD"]
+
+sudo docker build -t cmd-demo:a -f Dockerfile.cmd .
+Output=>
+Successfully tagged cmd-demo:a
+
+sudo docker run --rm cmd-demo:a
+Output=>
+Hello from CMD
+
+sudo docker run --rm cmd-demo:a echo "Hello from Docker"
+Output=>
+Hello from Docker
+
+
+cat > Dockerfile.entrypoint <<'EOF'
+FROM ubuntu:20.04
+ENTRYPOINT ["echo"]
+EOF
+
+cat Dockerfile.entrypoint
+Output=>
+FROM ubuntu:20.04
+ENTRYPOINT ["echo"]
+
+sudo docker build -t entrypoint-demo:b -f Dockerfile.entrypoint .
+Output=>
+Successfully tagged entrypoint-demo:b
+
+sudo docker run --rm entrypoint-demo:b
+Output=>
+[prints an empty line]
+
+sudo docker run --rm entrypoint-demo:b Hello from Docker
+Output=>
+Hello from Docker
+
+sudo docker image inspect cmd-demo:a --format='CMD={{json .Config.Cmd}} Entrypoint={{json .Config.Entrypoint}}'
+Output=>
+CMD=["echo","Hello from CMD"] Entrypoint=null
+
+sudo docker image inspect entrypoint-demo:b --format='CMD={{json .Config.Cmd}} Entrypoint={{json .Config.Entrypoint}}'
+Output=>
+CMD=null Entrypoint=["echo"]

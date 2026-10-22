@@ -80,7 +80,7 @@ sudo docker compose down
  ✔ Container docker-secret-assignment-alpine-secret-1 Removed                                                                                                                       0.0s
  ✔ Network docker-secret-assignment_default           Removed  
 
- 
+
 
 
 
