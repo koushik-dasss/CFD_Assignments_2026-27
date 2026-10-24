@@ -1,0 +1,62 @@
+# Q5 - Verify that files persist after a container is removed and recreated
+
+sudo docker volume create studentdata
+Output=>
+studentdata
+(Note: if Q3 already created this volume, Docker returns the existing volume name.)
+
+sudo docker run -it --name volume-writer -v studentdata:/data ubuntu bash
+
+# Commands entered inside the container:
+cd /data
+echo "Docker volume persistence works" > test.txt
+cat test.txt
+Output=>
+Docker volume persistence works
+
+exit
+Output=>
+exit
+
+sudo docker rm volume-writer
+Output=>
+volume-writer
+
+sudo docker run --rm -v studentdata:/data ubuntu cat /data/test.txt
+Output=>
+Docker volume persistence works
+
+sudo docker run -it --name volume-reader -v studentdata:/data ubuntu bash
+
+# Commands entered inside the new container:
+cd /data
+ls -l
+Output=>
+-rw-r--r-- 1 root root <size> <date> test.txt
+
+cat test.txt
+Output=>
+Docker volume persistence works
+
+exit
+Output=>
+exit
+
+sudo docker rm volume-reader
+Output=>
+volume-reader
+
+sudo docker volume inspect studentdata
+Output=>
+[
+    {
+        "Name": "studentdata",
+        "Driver": "local",
+        ...
+    }
+]
+
+Notes:
+- The file remains available because it is stored in the named volume, not only in the writable layer of the first container.
+- Removing a container does not remove a named volume.
+- Do not run 'docker volume rm studentdata' before verifying persistence, because that deletes the volume.

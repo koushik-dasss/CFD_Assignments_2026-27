@@ -1,0 +1,28 @@
+# Q1 - Verify Docker installation and version
+
+sudo docker --version
+Output=>
+Docker version <installed-version>, build <build-id>
+
+sudo docker version
+Output=>
+Client:
+ Version:           <installed-version>
+ API version:       <api-version>
+ OS/Arch:           linux/amd64
+ ...
+Server:
+ Engine:
+  Version:          <installed-version>
+  OS/Arch:           linux/amd64
+  ...
+
+sudo docker run hello-world
+Output=>
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+Notes:
+- Exact version, build ID, API version, and architecture depend on the installed Docker environment.
+- If Docker reports a permission error, use sudo as shown above.
+- If the daemon is not running, start Docker before retrying.

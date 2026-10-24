@@ -1,0 +1,49 @@
+# Q3 - Create a Docker volume named studentdata and mount it at /data in Ubuntu
+
+sudo docker volume create studentdata
+Output=>
+studentdata
+
+sudo docker volume ls
+Output=>
+DRIVER    VOLUME NAME
+local     studentdata
+
+sudo docker run -it --name ubuntu-volume-test -v studentdata:/data ubuntu bash
+Output=>
+root@<container-id>:/#
+
+# Commands entered inside the Ubuntu container:
+cd /data
+pwd
+Output=>
+/data
+
+ls -la
+Output=>
+total 8
+drwxr-xr-x 2 root root 4096 <date> .
+drwxr-xr-x 1 root root 4096 <date> ..
+
+exit
+Output=>
+exit
+
+sudo docker inspect ubuntu-volume-test --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{println}}{{end}}'
+Output=>
+studentdata -> /data
+
+sudo docker volume inspect studentdata
+Output=>
+[
+    {
+        "Name": "studentdata",
+        "Driver": "local",
+        ...
+    }
+]
+
+Notes:
+- The named volume is managed by Docker.
+- The volume is mounted at /data inside the container.
+- Removing the container does not automatically remove the named volume.

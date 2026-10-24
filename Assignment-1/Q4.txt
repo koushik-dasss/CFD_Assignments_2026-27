@@ -1,0 +1,59 @@
+# Q4 - Create college-net and run two containers connected to it
+
+sudo docker network create college-net
+Output=>
+<network-id>
+
+sudo docker network ls
+Output=>
+NETWORK ID     NAME          DRIVER    SCOPE
+<id>           bridge        bridge    local
+<id>           college-net   bridge    local
+<id>           host          host      local
+<id>           none          null      local
+
+sudo docker run -dit --name container1 --network college-net ubuntu bash
+Output=>
+<container-id>
+
+sudo docker run -dit --name container2 --network college-net ubuntu bash
+Output=>
+<container-id>
+
+sudo docker ps
+Output=>
+CONTAINER ID   IMAGE    COMMAND   STATUS   PORTS   NAMES
+<id>           ubuntu   "bash"    Up ...           container1
+<id>           ubuntu   "bash"    Up ...           container2
+
+sudo docker network inspect college-net
+Output=>
+[
+    {
+        "Name": "college-net",
+        "Driver": "bridge",
+        "Containers": {
+            "<container-id-1>": {
+                "Name": "container1",
+                "IPv4Address": "<container-ip-1>/16"
+            },
+            "<container-id-2>": {
+                "Name": "container2",
+                "IPv4Address": "<container-ip-2>/16"
+            }
+        }
+    }
+]
+
+sudo docker exec container1 getent hosts container2
+Output=>
+<container-ip-2> container2
+
+sudo docker exec container2 getent hosts container1
+Output=>
+<container-ip-1> container1
+
+Notes:
+- Both containers are attached to the same user-defined bridge network.
+- Docker's embedded DNS allows containers on this network to resolve each other by container name.
+- Container IDs and IP addresses vary by run.
