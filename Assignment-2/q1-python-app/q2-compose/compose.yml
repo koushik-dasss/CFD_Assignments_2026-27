@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    expose:
+      - "5000"
+    volumes:
+      - reports-data:/reports
+    networks:
+      - app-network
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  reports-data:
+
+networks:
+  app-network:
+    driver: bridge

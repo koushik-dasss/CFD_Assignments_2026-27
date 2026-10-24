@@ -1,0 +1,90 @@
+CFD ASSIGNMENT-2 — QUESTION 1
+Dockerfile for Python Student Marks Application
+================================================
+
+# Run commands in Ubuntu terminal. The sample output is deterministic; Docker IDs vary.
+
+mkdir -p "$HOME/Desktop/CFD Assignments /Assignment-2/q1-python-app"
+cd "$HOME/Desktop/CFD Assignments /Assignment-2/q1-python-app"
+
+cat > marks.txt <<'EOF'
+85
+72
+60
+35
+28
+EOF
+
+cat > app.py <<'EOF'
+import os
+
+APP_NAME = os.getenv("APP_NAME", "Student Marks Analyzer")
+PASS_MARK = float(os.getenv("PASS_PERCENTAGE", "40"))
+
+with open("marks.txt", encoding="utf-8") as file:
+    marks = [float(line.strip()) for line in file if line.strip()]
+
+if not marks or any(mark < 0 or mark > 100 for mark in marks):
+    raise ValueError("Marks must be present and between 0 and 100.")
+
+average = sum(marks) / len(marks)
+passed = sum(1 for mark in marks if mark >= PASS_MARK)
+pass_percentage = passed / len(marks) * 100
+
+if average >= 90:
+    grade = "A"
+elif average >= 75:
+    grade = "B"
+elif average >= 60:
+    grade = "C"
+elif average >= 40:
+    grade = "D"
+else:
+    grade = "F"
+
+print(f"Application: {APP_NAME}")
+print(f"Average marks: {average:.2f}")
+print(f"Grade: {grade}")
+print(f"Students passed: {passed}/{len(marks)}")
+print(f"Pass percentage: {pass_percentage:.2f}%")
+EOF
+
+cat > Dockerfile <<'EOF'
+FROM python:3.12-slim
+WORKDIR /app
+COPY app.py .
+COPY marks.txt .
+ENV APP_NAME="Student Marks Analyzer"
+ENV PASS_PERCENTAGE=40
+CMD ["python", "app.py"]
+EOF
+
+sudo docker build -t my-python-app:v1 .
+sudo docker images
+sudo docker run --name marks-container my-python-app:v1
+
+Expected output:
+Application: Student Marks Analyzer
+Average marks: 56.00
+Grade: D
+Students passed: 3/5
+Pass percentage: 60.00%
+
+Inspect:
+sudo docker ps -a
+sudo docker logs marks-container
+
+Override environment variables without rebuilding:
+sudo docker run --rm --name marks-custom -e APP_NAME="College Results Analyzer" -e PASS_PERCENTAGE=50 my-python-app:v1
+
+Expected output:
+Application: College Results Analyzer
+Average marks: 56.00
+Grade: D
+Students passed: 3/5
+Pass percentage: 60.00%
+
+Optional cleanup only:
+sudo docker rm marks-container
+
+Note: container removal is optional; the assignment only requires building and running the image.

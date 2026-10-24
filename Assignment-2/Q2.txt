@@ -1,0 +1,124 @@
+CFD ASSIGNMENT-2 — QUESTION 2
+Compose Frontend/Backend and Persistent Reports
+================================================
+
+Prerequisite: Compose v2 must be installed; verify using sudo docker compose version.
+
+mkdir -p "$HOME/Desktop/CFD Assignments /Assignment-2/q2-compose/frontend"
+mkdir -p "$HOME/Desktop/CFD Assignments /Assignment-2/q2-compose/backend"
+cd "$HOME/Desktop/CFD Assignments /Assignment-2/q2-compose"
+
+cat > backend/app.py <<'EOF'
+from flask import Flask, jsonify
+from datetime import datetime, timezone
+from pathlib import Path
+import json, uuid
+
+app = Flask(__name__)
+REPORT_DIR = Path("/reports")
+
+@app.get("/health")
+def health():
+    return jsonify({"status": "healthy"})
+
+@app.get("/report")
+def create_report():
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    report = {"id": str(uuid.uuid4()), "message": "Report generated successfully",
+              "generated_at": datetime.now(timezone.utc).isoformat()}
+    filename = REPORT_DIR / f"{report['id']}.json"
+    filename.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return jsonify({"report": report, "saved_to": str(filename)})
+
+@app.get("/reports")
+def list_reports():
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    return jsonify([json.loads(p.read_text(encoding="utf-8"))
+                    for p in sorted(REPORT_DIR.glob("*.json"))])
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+EOF
+
+cat > backend/Dockerfile <<'EOF'
+FROM python:3.12-slim
+WORKDIR /app
+RUN pip install --no-cache-dir Flask==3.1.2
+COPY app.py .
+EXPOSE 5000
+CMD ["python", "app.py"]
+EOF
+
+cat > frontend/nginx.conf <<'EOF'
+server {
+    listen 80;
+    server_name _;
+    location / {
+        default_type text/html;
+        return 200 '<!doctype html><html><head><title>Compose Application</title></head><body><h1>Frontend Web Server</h1><button onclick="fetchReport()">Generate Report</button><button onclick="listReports()">List Reports</button><pre id="output"></pre><script>async function fetchReport(){let r=await fetch("/api/report");document.getElementById("output").textContent=JSON.stringify(await r.json(),null,2)}async function listReports(){let r=await fetch("/api/reports");document.getElementById("output").textContent=JSON.stringify(await r.json(),null,2)}</script></body></html>';
+    }
+    location /api/ {
+        proxy_pass http://backend:5000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+cat > compose.yml <<'EOF'
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    expose:
+      - "5000"
+    volumes:
+      - reports-data:/reports
+    networks:
+      - app-network
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  reports-data:
+
+networks:
+  app-network:
+    driver: bridge
+EOF
+
+sudo docker compose config
+sudo docker compose up -d --build
+sudo docker compose ps
+
+Test:
+curl http://localhost:8080/api/health
+curl http://localhost:8080/api/report
+curl http://localhost:8080/api/reports
+Open http://localhost:8080 in browser.
+
+Persistence test: generate a report, then recreate only backend:
+sudo docker compose up -d --no-deps --force-recreate backend
+curl http://localhost:8080/api/reports
+sudo docker volume ls
+
+Inspect:
+sudo docker compose logs backend
+sudo docker compose logs frontend
+sudo docker network ls
+
+Stop/remove containers and network, retaining volume:
+sudo docker compose down
+
+Remove volume and report data too (optional/destructive):
+sudo docker compose down -v
