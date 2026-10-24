@@ -1,0 +1,79 @@
+# Q4 - Configure Redis primary and replica using Docker Compose
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q4
+cd ~/CFD-Assignment-4/Q4
+
+# Step 2: Create the Compose configuration
+cat > compose.yaml <<'YAML'
+services:
+  redis-primary:
+    image: redis:7
+    container_name: assignment4-redis-primary
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_primary_data:/data
+    restart: unless-stopped
+
+  redis-replica:
+    image: redis:7
+    container_name: assignment4-redis-replica
+    command: ["redis-server", "--replicaof", "redis-primary", "6379"]
+    depends_on:
+      - redis-primary
+    ports:
+      - "6380:6379"
+    restart: unless-stopped
+
+volumes:
+  redis_primary_data:
+YAML
+
+# Step 3: Start both Redis services
+sudo docker compose up -d
+sudo docker compose ps
+
+# Step 4: Wait briefly for replication, then check the replica role
+sudo docker exec assignment4-redis-replica redis-cli INFO replication
+
+Output=>
+The replica output should contain role:slave (Redis uses this label in INFO output) and master_link_status:up after synchronization.
+
+# Step 5: Insert at least five key-value pairs into the primary
+sudo docker exec assignment4-redis-primary redis-cli MSET \
+  student:1 "Aarav" \
+  student:2 "Diya" \
+  student:3 "Rohan" \
+  student:4 "Ananya" \
+  student:5 "Kabir"
+
+# Step 6: Read values from the replica
+sudo docker exec assignment4-redis-replica redis-cli MGET \
+  student:1 student:2 student:3 student:4 student:5
+
+Output=>
+1) "Aarav"
+2) "Diya"
+3) "Rohan"
+4) "Ananya"
+5) "Kabir"
+
+# Step 7: Attempt to modify a key directly on the replica
+sudo docker exec assignment4-redis-replica redis-cli SET student:6 "UnauthorizedWrite"
+
+Output=>
+(error) READONLY You can't write against a read only replica.
+
+# Step 8: Verify that the key was not written to the replica
+sudo docker exec assignment4-redis-replica redis-cli GET student:6
+
+Output=>
+(nil)
+
+Notes:
+- The replica connects to the primary by its Compose service name, 'redis-primary', on port 6379.
+- The host port 6380 maps to port 6379 inside the replica container.
+- Redis replication is asynchronous; if a value does not appear immediately, check INFO replication and retry the read.
+- This lab uses no Redis password and should be run only in a trusted local environment.

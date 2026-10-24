@@ -1,0 +1,65 @@
+# Q8 - Pin Python dependencies and run the application in a specific Python image
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q8
+cd ~/CFD-Assignment-4/Q8
+
+# Step 2: Create requirements.txt with fixed versions of two third-party libraries
+cat > requirements.txt <<'REQ'
+requests==2.32.3
+python-dateutil==2.9.0.post0
+REQ
+
+# Step 3: Create a Python application using both libraries
+cat > app.py <<'PY'
+import requests
+from dateutil.relativedelta import relativedelta
+from datetime import date
+
+today = date(2026, 10, 24)
+future = today + relativedelta(months=1)
+
+print("requests version:", requests.__version__)
+print("One month after", today.isoformat(), "is", future.isoformat())
+print("Dependency check: successful")
+PY
+
+# Step 4: Create a Dockerfile with a specific Python runtime version
+cat > Dockerfile <<'DOCKER'
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+CMD ["python", "app.py"]
+DOCKER
+
+# Step 5: Build the image
+sudo docker build -t assignment4-python-app .
+
+# Step 6: Run the application
+sudo docker run --rm assignment4-python-app
+
+Output=>
+requests version: 2.32.3
+One month after 2026-10-24 is 2026-11-24
+Dependency check: successful
+
+# Step 7: Investigate a dependency version change
+# Change requests==2.32.3 in requirements.txt to another valid version, for example requests==2.31.0.
+sed -i 's/requests==2.32.3/requests==2.31.0/' requirements.txt
+
+# Rebuild the image
+sudo docker build --progress=plain -t assignment4-python-app:v2 .
+
+# Run and compare the installed version and output
+sudo docker run --rm assignment4-python-app:v2
+
+Output=>
+The displayed requests version should now be 2.31.0. The date calculation and other program output should remain the same because this example does not make an HTTP request.
+
+Notes:
+- The Python base image tag pins the Python minor version to 3.12, while requirements.txt pins the direct dependency versions.
+- Changing requirements.txt invalidates the dependency-installation build layer, so pip runs again during the rebuild.
+- A fixed version helps repeat installations, though strict reproducibility can also require pinning transitive dependencies and using image digests.
+- The example uses a fixed date to make output stable across runs. Replace it with date.today() if the assignment expects the actual current date.

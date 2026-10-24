@@ -1,0 +1,82 @@
+# Q6 - Measure Java execution time with and without Docker resource restrictions
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q6
+cd ~/CFD-Assignment-4/Q6
+
+# Step 2: Create a computationally intensive Java program
+cat > CpuBenchmark.java <<'JAVA'
+public class CpuBenchmark {
+    public static void main(String[] args) {
+        final int limit = 30_000_000;
+        long start = System.nanoTime();
+
+        boolean[] composite = new boolean[limit + 1];
+        long primeCount = 0;
+        for (int p = 2; (long) p * p <= limit; p++) {
+            if (!composite[p]) {
+                for (long multiple = (long) p * p; multiple <= limit; multiple += p) {
+                    composite[(int) multiple] = true;
+                }
+            }
+        }
+        for (int n = 2; n <= limit; n++) {
+            if (!composite[n]) {
+                primeCount++;
+            }
+        }
+
+        long elapsed = System.nanoTime() - start;
+        System.out.printf("Limit: %d%nPrime count: %d%nExecution time: %.3f seconds%n",
+                limit, primeCount, elapsed / 1_000_000_000.0);
+    }
+}
+JAVA
+
+# Step 3: Create a Dockerfile using a Java runtime/development image
+cat > Dockerfile <<'DOCKER'
+FROM eclipse-temurin:21-jdk
+WORKDIR /app
+COPY CpuBenchmark.java .
+RUN javac CpuBenchmark.java
+CMD ["java", "CpuBenchmark"]
+DOCKER
+
+# Step 4: Build the image
+sudo docker build -t assignment4-java-benchmark .
+
+# Step 5: Run without explicit CPU or memory limits
+sudo docker run --rm --name java-unrestricted assignment4-java-benchmark
+
+Output=>
+Limit: 30000000
+Prime count: <calculated-count>
+Execution time: <measured-seconds> seconds
+
+# Record the execution time shown by your own machine. It varies by CPU, load, and Docker setup.
+
+# Step 6: Run with CPU and memory restrictions
+sudo docker run --rm --name java-limited --cpus="1.0" --memory="256m" assignment4-java-benchmark
+
+Output=>
+The program should print the same prime count, but execution time may be longer under the CPU limit. Record the measured time from your system.
+
+# Step 7: Inspect live resource usage.
+# Start a longer-running benchmark in the background so docker stats has time to sample it.
+sudo docker run -d --name java-stats --cpus="1.0" --memory="256m" assignment4-java-benchmark
+sudo docker stats java-stats
+
+Output=>
+CONTAINER ID   NAME        CPU %   MEM USAGE / LIMIT   MEM %   ...
+<values measured by Docker>
+
+# If the benchmark exits before stats can sample it, increase the workload or run stats while it is running.
+sudo docker logs java-stats
+sudo docker rm -f java-stats
+
+Notes:
+- 'System.nanoTime()' is used for elapsed-time measurement because it is suitable for measuring durations.
+- Do not copy an example time as your result; record the value produced on your own computer.
+- '--cpus=1.0' limits the container to approximately one CPU core's worth of time; '--memory=256m' sets its memory limit.
+- This benchmark is CPU-intensive and does not intentionally allocate large amounts of memory, so CPU restriction is likely to affect its runtime more noticeably.
+- The JDK image is used to compile the source during the image build and run the compiled class.

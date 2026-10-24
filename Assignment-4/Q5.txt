@@ -1,0 +1,107 @@
+# Q5 - Compare Docker build cache when application files change
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q5
+cd ~/CFD-Assignment-4/Q5
+
+# Step 2: Create a Node.js app using two external npm packages
+cat > package.json <<'JSON'
+{
+  "name": "assignment4-node-cache",
+  "version": "1.0.0",
+  "private": true,
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "lodash": "4.17.21"
+  }
+}
+JSON
+
+cat > app.js <<'JS'
+const express = require("express");
+const _ = require("lodash");
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get("/", (_req, res) => {
+  res.json({
+    message: "Docker build-cache demonstration",
+    sample: _.capitalize("hello from lodash")
+  });
+});
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server listening on port ${port}`);
+});
+JS
+
+# Step 3: Initial Dockerfile - copies all files before installing dependencies
+cat > Dockerfile.initial <<'DOCKER'
+FROM node:22-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
+EXPOSE 3000
+CMD ["npm", "start"]
+DOCKER
+
+# Exclude local dependencies and Git metadata from the build context
+cat > .dockerignore <<'EOF'
+node_modules
+.git
+npm-debug.log
+EOF
+
+# Step 4: Build the initial image
+sudo docker build --progress=plain -f Dockerfile.initial -t assignment4-node-initial .
+
+# Step 5: Modify only application source code and rebuild
+# This changes a response message but does not change package.json.
+sed -i 's/Docker build-cache demonstration/Docker cache test after source change/' app.js
+sudo docker build --progress=plain -f Dockerfile.initial -t assignment4-node-initial .
+
+Output=>
+With this Dockerfile, the COPY . . layer changes when app.js changes, so the later RUN npm install layer normally runs again.
+
+# Step 6: Create an improved Dockerfile that copies dependency manifests first
+cat > Dockerfile <<'DOCKER'
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm install
+COPY app.js ./
+EXPOSE 3000
+CMD ["npm", "start"]
+DOCKER
+
+# Create a lockfile so dependency installation can be reproducible
+sudo docker run --rm -v "$PWD":/app -w /app node:22-alpine npm install --package-lock-only
+
+# Step 7: Build the optimized image
+sudo docker build --progress=plain -t assignment4-node-optimized .
+
+# Step 8: Modify only app.js and rebuild again
+sed -i 's/cache test after source change/cache test after second source change/' app.js
+sudo docker build --progress=plain -t assignment4-node-optimized .
+
+Output=>
+In the optimized Dockerfile, the package manifest COPY layer and RUN npm install layer should be reported as CACHED when only app.js changes. The final COPY app.js layer and following image configuration are rebuilt.
+
+# Step 9: Run the app and verify its response
+sudo docker run -d --name assignment4-node-app -p 3000:3000 assignment4-node-optimized
+curl http://localhost:3000
+sudo docker logs assignment4-node-app
+
+# Cleanup
+sudo docker rm -f assignment4-node-app
+
+Notes:
+- Docker reuses a layer only when its instruction and relevant input files have not changed.
+- Copying package.json and package-lock.json before app source code preserves the dependency-install cache for source-only edits.
+- The wildcard package-lock.json* works with Docker's COPY when at least one matching file exists; generate package-lock.json before building the optimized image.
+- For fully reproducible builds, prefer 'npm ci' after generating and committing package-lock.json.

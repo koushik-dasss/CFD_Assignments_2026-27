@@ -1,0 +1,79 @@
+# Q1 - Initialize MariaDB automatically using Docker Compose and a named volume
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q1
+cd ~/CFD-Assignment-4/Q1
+
+# Step 2: Create the initialization SQL file
+cat > init.sql <<'SQL'
+CREATE DATABASE IF NOT EXISTS college;
+USE college;
+
+CREATE TABLE IF NOT EXISTS students (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    semester INT NOT NULL
+);
+
+INSERT INTO students (student_id, name, department, semester) VALUES
+(1, 'Aarav Sharma', 'CSE', 7),
+(2, 'Diya Patel', 'IT', 7),
+(3, 'Rohan Das', 'CSE', 7),
+(4, 'Ananya Singh', 'ECE', 7),
+(5, 'Kabir Roy', 'IT', 7);
+SQL
+
+# Step 3: Create the Docker Compose configuration
+cat > compose.yaml <<'YAML'
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: assignment4-mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: collegeRootPass123
+      MARIADB_DATABASE: college
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+YAML
+
+# Step 4: Start the application
+sudo docker compose up -d
+
+# Step 5: Check container status and logs
+sudo docker compose ps
+sudo docker compose logs mariadb
+
+# Step 6: Verify the table and records
+sudo docker exec -it assignment4-mariadb mariadb -uroot -pcollegeRootPass123 -D college -e "SELECT * FROM students;"
+
+Output=>
+The students table should contain five rows with student IDs 1 through 5.
+
+# Step 7: Test whether the initialization script runs again
+# Modify init.sql, for example, add a sixth INSERT statement, then run:
+sudo docker compose restart mariadb
+sudo docker exec -it assignment4-mariadb mariadb -uroot -pcollegeRootPass123 -D college -e "SELECT COUNT(*) AS total_students FROM students;"
+
+Output=>
+The count remains unchanged by edits to init.sql alone. The official MariaDB image runs files in /docker-entrypoint-initdb.d only when initializing an empty database data directory.
+
+# Optional: Demonstrate first-time initialization again (DESTRUCTIVE: deletes this project's database volume)
+# Only run if you have no data to preserve:
+sudo docker compose down
+sudo docker volume rm q1_mariadb_data
+sudo docker compose up -d
+sudo docker exec -it assignment4-mariadb mariadb -uroot -pcollegeRootPass123 -D college -e "SELECT * FROM students;"
+
+Notes:
+- Compose normally names the volume <project-directory>_mariadb_data; confirm the exact name with 'sudo docker volume ls' before removing it.
+- 'docker compose restart' does not recreate the database and does not rerun initialization SQL.
+- The SQL file is mounted read-only. Keep real passwords out of public repositories; use a .env file or secrets for real deployments.
+- If the MARIADB_DATABASE database already exists in the named volume, initialization scripts are not run again.

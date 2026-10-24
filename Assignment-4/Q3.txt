@@ -1,0 +1,83 @@
+# Q3 - Deploy MongoDB with authentication and restrict a user to the research database
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q3
+cd ~/CFD-Assignment-4/Q3
+
+# Step 2: Create the Compose configuration
+cat > compose.yaml <<'YAML'
+services:
+  mongodb:
+    image: mongo:7
+    container_name: assignment4-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: rootadmin
+      MONGO_INITDB_ROOT_PASSWORD: RootMongoPass123
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+YAML
+
+# Step 3: Start MongoDB with authentication enabled
+sudo docker compose up -d
+sudo docker compose logs mongodb
+
+# Step 4: Authenticate as the administrator and create the research database user.
+# The init script below uses mongosh inside the running container.
+sudo docker exec -it assignment4-mongodb mongosh \
+  --username rootadmin --password RootMongoPass123 --authenticationDatabase admin
+
+# Commands at the mongosh prompt:
+use research
+db.createUser({
+  user: "research_user",
+  pwd: "ResearchUserPass123",
+  roles: [{ role: "readWrite", db: "research" }]
+})
+db.projects.insertMany([
+  { project_id: 1, title: "Smart Campus", area: "IoT" },
+  { project_id: 2, title: "Crop Disease Detection", area: "AI" },
+  { project_id: 3, title: "Energy Forecasting", area: "Machine Learning" },
+  { project_id: 4, title: "Secure Document Sharing", area: "Cybersecurity" },
+  { project_id: 5, title: "Traffic Analysis", area: "Computer Vision" }
+])
+db.projects.find({}, { _id: 0 }).pretty()
+exit
+
+# Step 5: Verify that the authorized user can read the research projects
+sudo docker exec -it assignment4-mongodb mongosh research \
+  --username research_user --password ResearchUserPass123 \
+  --authenticationDatabase research \
+  --eval 'db.projects.find({}, {_id: 0}).forEach(printjson)'
+
+Output=>
+The authorized user should see five project documents.
+
+# Step 6: Demonstrate that the user is restricted to research
+sudo docker exec -it assignment4-mongodb mongosh research \
+  --username research_user --password ResearchUserPass123 \
+  --authenticationDatabase research \
+  --eval 'db.projects.insertOne({project_id: 6, title: "Authorized Test", area: "Testing"})'
+
+Output=>
+The insert should succeed because the user has readWrite on research.
+
+# Attempt to read a different database (for example admin):
+sudo docker exec -it assignment4-mongodb mongosh admin \
+  --username research_user --password ResearchUserPass123 \
+  --authenticationDatabase research \
+  --eval 'db.system.users.findOne()'
+
+Output=>
+The operation should fail with an authorization error because research_user has no administrative role.
+
+Notes:
+- MONGO_INITDB_ROOT_USERNAME and MONGO_INITDB_ROOT_PASSWORD create an administrator in the admin authentication database on first initialization.
+- The research_user is granted only the readWrite role on research.
+- MongoDB initialization environment variables do not reset users in an already initialized data volume.
+- Replace example passwords for real use. Avoid publishing credentials in shared repositories.

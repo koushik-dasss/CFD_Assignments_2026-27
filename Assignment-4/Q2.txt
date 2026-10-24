@@ -1,0 +1,90 @@
+# Q2 - Back up PostgreSQL with pg_dump, recreate the database volume, and restore it
+
+# Step 1: Create a project directory
+mkdir -p ~/CFD-Assignment-4/Q2
+cd ~/CFD-Assignment-4/Q2
+
+# Step 2: Create the Compose configuration
+cat > compose.yaml <<'YAML'
+services:
+  postgres:
+    image: postgres:16
+    container_name: assignment4-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: departmentPass123
+      POSTGRES_DB: department
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d department"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres_data:
+YAML
+
+# Step 3: Start PostgreSQL and wait until it is healthy
+sudo docker compose up -d
+sudo docker compose ps
+
+# Step 4: Create two related tables and sample records
+sudo docker exec -i assignment4-postgres psql -U admin -d department <<'SQL'
+CREATE TABLE departments (
+    department_id INT PRIMARY KEY,
+    department_name VARCHAR(100) NOT NULL
+);
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY,
+    employee_name VARCHAR(100) NOT NULL,
+    department_id INT NOT NULL REFERENCES departments(department_id)
+);
+INSERT INTO departments VALUES (10, 'Computer Science'), (20, 'Information Technology');
+INSERT INTO employees VALUES
+(1, 'Aarav', 10),
+(2, 'Diya', 20),
+(3, 'Rohan', 10);
+SQL
+
+# Step 5: Verify the data
+sudo docker exec -it assignment4-postgres psql -U admin -d department -c "SELECT e.employee_id, e.employee_name, d.department_name FROM employees e JOIN departments d USING (department_id);"
+
+# Step 6: Create a logical backup in a host file
+mkdir -p backup
+sudo docker exec assignment4-postgres pg_dump -U admin -d department > backup/department_backup.sql
+
+# Verify that the backup exists and is non-empty
+ls -lh backup/department_backup.sql
+head -n 20 backup/department_backup.sql
+
+# Step 7: Stop and remove the original container and data volume.
+# IMPORTANT: Do not continue until you have verified the backup file exists.
+sudo docker compose down
+sudo docker volume ls
+# Compose volume name is usually q2_postgres_data. Confirm the exact name first.
+sudo docker volume rm q2_postgres_data
+
+# Step 8: Start a fresh PostgreSQL instance with a new empty volume
+sudo docker compose up -d
+sudo docker compose ps
+
+# Step 9: Restore the SQL backup into the new database
+cat backup/department_backup.sql | sudo docker exec -i assignment4-postgres psql -U admin -d department
+
+# Step 10: Verify that both tables and their records were restored
+sudo docker exec -it assignment4-postgres psql -U admin -d department -c "\\dt"
+sudo docker exec -it assignment4-postgres psql -U admin -d department -c "SELECT * FROM departments;"
+sudo docker exec -it assignment4-postgres psql -U admin -d department -c "SELECT * FROM employees;"
+
+Output=>
+The departments and employees tables, their relationship, and the sample records should be present after restoration.
+
+Notes:
+- 'pg_dump' creates a logical SQL backup; the backup file is stored on the host, outside the original Docker volume.
+- The volume name depends on the Compose project name. Use 'sudo docker volume ls' and remove only the correct Q2 volume.
+- Removing the volume permanently deletes its database files. Keep a second copy of the backup if the data matters.
+- If restoring into a database that already contains these tables, duplicate-object errors can occur. Use a fresh empty volume as shown.
