@@ -1,0 +1,121 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q10
+Diagnose and fix a failed Node.js backend
+
+PURPOSE
+Use the Q9 Node.js + Nginx architecture. Introduce one failure while keeping Nginx running, diagnose it using docker ps, docker logs, docker inspect, docker network inspect, and docker port, then correct it and verify recovery.
+
+ASSUMPTION
+Q9 has been completed. The containers are named student-app and student-nginx, and both use student-network. Nginx publishes host port 8080.
+
+1. VERIFY THE APPLICATION WORKS BEFORE THE FAILURE
+
+sudo docker ps
+curl -i http://localhost:8080/
+curl -i http://localhost:8080/students
+
+2. INTRODUCE A STOPPED-BACKEND FAILURE
+
+sudo docker stop student-app
+
+Do not stop student-nginx.
+
+3. CHECK RUNNING CONTAINERS
+
+sudo docker ps
+
+student-nginx should remain running. student-app should not appear because it is stopped.
+
+4. SHOW ALL CONTAINERS
+
+sudo docker ps -a
+
+student-app should appear with an exited/stopped status.
+
+5. TEST THE FAILED APPLICATION
+
+curl -i http://localhost:8080/
+
+A 502 Bad Gateway response is normally expected because Nginx is running but its upstream backend is unavailable.
+
+6. CHECK NODE.JS LOGS
+
+sudo docker logs student-app
+
+7. CHECK NGINX LOGS
+
+sudo docker logs student-nginx
+
+Look for upstream connection errors. Exact log messages depend on timing and the request.
+
+8. INSPECT BACKEND STATE
+
+sudo docker inspect student-app
+sudo docker inspect -f '{{.State.Status}}' student-app
+sudo docker inspect -f '{{.State.ExitCode}}' student-app
+
+The state should be exited. The exit code alone does not establish whether the application was healthy before it was stopped.
+
+9. INSPECT THE NETWORK
+
+sudo docker network inspect student-network
+
+Check whether student-nginx and student-app are associated with student-network. A stopped container may still be shown as a network endpoint; membership does not mean the service is running.
+
+10. CHECK PUBLISHED PORTS
+
+sudo docker port student-nginx
+sudo docker port student-app
+
+student-nginx should publish host port 8080 to container port 80. student-app should have no host port mapping; this is intentional.
+
+11. CORRECT THE FAILURE BY RESTARTING THE BACKEND
+
+sudo docker start student-app
+
+12. VERIFY BOTH CONTAINERS ARE RUNNING
+
+sudo docker ps
+
+13. CHECK BACKEND LOGS
+
+sudo docker logs student-app
+
+Look for:
+Server running on port 3000
+
+14. VERIFY NETWORK MEMBERSHIP AND PROXY PORT
+
+sudo docker network inspect student-network
+sudo docker port student-nginx
+
+15. TEST RECOVERY THROUGH NGINX
+
+curl -i http://localhost:8080/
+curl -i http://localhost:8080/students
+
+Expected root body:
+Student Application is running
+
+Expected /students JSON:
+[{"id":1,"name":"Student A"},{"id":2,"name":"Student B"}]
+
+DIAGNOSIS
+Before recovery:
+- Nginx is running.
+- Node.js container is stopped.
+- The configured network and port mappings may still be correct.
+- Requests through Nginx normally return 502 because the upstream is unavailable.
+
+After recovery:
+- Both containers are running.
+- The backend remains private (no published host port).
+- Requests to / and /students through host port 8080 succeed.
+
+CONCEPTS
+- docker ps shows running containers; docker ps -a also shows stopped containers.
+- docker logs shows container process output.
+- docker inspect shows detailed state and configuration.
+- docker network inspect shows network and container membership.
+- docker port shows published port mappings.
+- Troubleshooting should distinguish container state, application process, port configuration, and network configuration.

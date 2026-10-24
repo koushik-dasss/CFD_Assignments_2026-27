@@ -1,0 +1,99 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q8
+User-defined Docker network and service-name resolution
+
+PURPOSE
+Connect frontend, student-service, and faculty-service to college-network. From frontend, resolve backend names and access both services without IP addresses.
+
+NOTE
+If Q7 is already complete, the three containers and the network already exist. Reuse them and start at Step 5. If starting independently, use the setup below.
+
+1. CREATE THE NETWORK
+
+sudo docker network create college-network
+
+If it already exists, reuse it.
+
+2. CREATE BACKEND DIRECTORIES
+
+mkdir -p ~/CFD-Assignment-3/q8/backend1
+mkdir -p ~/CFD-Assignment-3/q8/backend2
+cd ~/CFD-Assignment-3/q8
+
+3. CREATE STUDENT PAGE
+
+cat > backend1/index.html <<'EOF'
+<h1>Student Service</h1>
+<p>This page is served by Backend 1.</p>
+EOF
+
+4. CREATE FACULTY PAGE
+
+cat > backend2/index.html <<'EOF'
+<h1>Faculty Service</h1>
+<p>This page is served by Backend 2.</p>
+EOF
+
+5. RUN THE BACKEND CONTAINERS
+
+sudo docker run -d \
+  --name student-service \
+  --network college-network \
+  --mount "type=bind,source=$PWD/backend1,target=/usr/share/nginx/html,readonly" \
+  nginx:alpine
+
+sudo docker run -d \
+  --name faculty-service \
+  --network college-network \
+  --mount "type=bind,source=$PWD/backend2,target=/usr/share/nginx/html,readonly" \
+  nginx:alpine
+
+6. RUN A FRONTEND CONTAINER WITH CURL AND DNS UTILITIES
+
+sudo docker run -d \
+  --name frontend \
+  --network college-network \
+  --entrypoint sh \
+  nginx:alpine -c 'apk add --no-cache curl bind-tools && exec nginx -g "daemon off;"'
+
+This frontend is for demonstrating internal DNS and HTTP access. For the reverse-proxy version, use the configured frontend from Q7.
+
+7. VERIFY NETWORK MEMBERSHIP
+
+sudo docker network inspect college-network
+
+The Containers section should list frontend, student-service, and faculty-service.
+
+8. RESOLVE STUDENT-SERVICE BY NAME
+
+sudo docker exec frontend nslookup student-service
+
+9. RESOLVE FACULTY-SERVICE BY NAME
+
+sudo docker exec frontend nslookup faculty-service
+
+10. ACCESS STUDENT-SERVICE WITHOUT AN IP ADDRESS
+
+sudo docker exec frontend curl http://student-service/
+
+Expected content:
+<h1>Student Service</h1>
+<p>This page is served by Backend 1.</p>
+
+11. ACCESS FACULTY-SERVICE WITHOUT AN IP ADDRESS
+
+sudo docker exec frontend curl http://faculty-service/
+
+Expected content:
+<h1>Faculty Service</h1>
+<p>This page is served by Backend 2.</p>
+
+12. INSPECT NETWORK DETAILS
+
+sudo docker network inspect college-network
+
+CONCEPTS
+- Containers on the same user-defined bridge network can resolve one another by container name.
+- IP addresses may change when containers are recreated; names are more stable.
+- DNS resolution does not by itself guarantee that the application is healthy; the service must be listening on the expected port.
+- The frontend container needs curl and nslookup utilities for the specified tests.

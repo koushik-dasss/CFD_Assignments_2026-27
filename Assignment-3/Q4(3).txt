@@ -1,0 +1,68 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q4
+Alpine Linux, curl, file handling, and image-size comparison
+
+1. RUN ALPINE INTERACTIVELY
+
+sudo docker run -it --name alpine-test alpine
+
+2. DISPLAY ALPINE VERSION (INSIDE THE CONTAINER)
+
+cat /etc/alpine-release
+cat /etc/os-release
+
+3. CHECK WHETHER CURL IS AVAILABLE
+
+command -v curl
+curl --version
+
+If curl is not installed, command -v curl may return no output and curl --version will report that the command is not found.
+
+4. INSTALL CURL USING APK
+
+apk add --no-cache curl
+
+Verify:
+
+curl --version
+
+5. RETRIEVE THE EXAMPLE WEBSITE
+
+curl https://example.com
+
+6. SAVE THE WEBSITE CONTENT TO A FILE
+
+curl -fL -o example.html https://example.com
+
+7. DISPLAY THE SAVED FILE
+
+cat example.html
+ls -lh example.html
+
+8. EXIT THE CONTAINER
+
+exit
+
+9. PULL UBUNTU FOR COMPARISON
+
+sudo docker pull ubuntu:latest
+
+10. COMPARE IMAGE SIZES
+
+sudo docker images alpine ubuntu
+
+For exact byte sizes:
+
+sudo docker image inspect alpine --format '{{.Size}}'
+sudo docker image inspect ubuntu --format '{{.Size}}'
+
+EXPECTED RESULT
+The Alpine version should be printed. After installation, curl --version should display curl version information. example.html should contain the downloaded HTML response. Alpine is generally much smaller than Ubuntu.
+
+CONCEPTS
+- -it provides an interactive terminal.
+- apk is Alpine's package manager.
+- curl performs HTTP/HTTPS requests.
+- -o writes the response body to a file.
+- -fL makes curl fail on HTTP errors and follow redirects.
+- Installing a package inside a running container changes that container's writable layer; it does not modify the original image.

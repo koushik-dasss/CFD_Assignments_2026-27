@@ -1,0 +1,76 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q6
+Build a custom CSE Department website using Nginx
+
+1. CREATE THE PROJECT DIRECTORY
+
+mkdir -p ~/CFD-Assignment-3/college-website
+cd ~/CFD-Assignment-3/college-website
+
+2. CREATE index.html
+
+nano index.html
+
+Enter the exact HTML:
+
+<!DOCTYPE html>
+<html>
+<head><title>CSE Department</title></head>
+<body>
+<h1>Department of Computer Science and IT</h1>
+<p>Welcome to the CSE Department.</p>
+<p>Course: Containerization for Developers</p>
+</body>
+</html>
+
+Save and exit.
+
+3. CREATE THE DOCKERFILE
+
+nano Dockerfile
+
+Enter:
+
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+
+Save and exit.
+
+4. VERIFY FILES
+
+ls -l
+
+The directory should contain Dockerfile and index.html.
+
+5. BUILD THE IMAGE
+
+sudo docker build -t cse-website:v1 .
+
+6. RUN THE CONTAINER ON HOST PORT 8081
+
+sudo docker run -d --name cse-website-container -p 8081:80 cse-website:v1
+
+7. VERIFY CONTAINER AND PORT
+
+sudo docker ps
+sudo docker port cse-website-container
+
+8. TEST THE WEBSITE
+
+curl http://localhost:8081
+
+Open this address in the browser:
+http://localhost:8081
+
+9. VERIFY THE HTML INSIDE THE CONTAINER
+
+sudo docker exec cse-website-container cat /usr/share/nginx/html/index.html
+
+EXPECTED RESULT
+The browser or curl should display the custom CSE Department page, not the default Nginx welcome page.
+
+CONCEPTS
+- COPY copies a file from the build context into the image.
+- The official Nginx image serves static files from /usr/share/nginx/html.
+- -p 8081:80 maps host port 8081 to Nginx's container port 80.
+- Editing the source file requires rebuilding the image and recreating the container to update the copied file.

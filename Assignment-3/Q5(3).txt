@@ -1,0 +1,90 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q5
+Build Alpine and Ubuntu images containing curl
+
+PART A: ALPINE IMAGE
+
+1. CREATE A DIRECTORY
+
+mkdir -p ~/CFD-Assignment-3/alpine-curl
+cd ~/CFD-Assignment-3/alpine-curl
+
+2. CREATE THE DOCKERFILE
+
+nano Dockerfile
+
+Enter:
+
+FROM alpine:latest
+RUN apk add --no-cache curl
+WORKDIR /app
+CMD ["sh"]
+
+Save the file and exit the editor.
+
+3. BUILD THE IMAGE
+
+sudo docker build -t alpine-curl:v1 .
+
+4. RUN IT AND VERIFY CURL
+
+sudo docker run -it --name alpine-curl-container alpine-curl:v1
+
+Inside the container:
+
+curl --version
+curl -fL https://example.com
+exit
+
+PART B: UBUNTU IMAGE
+
+1. CREATE A DIRECTORY
+
+mkdir -p ~/CFD-Assignment-3/ubuntu-curl
+cd ~/CFD-Assignment-3/ubuntu-curl
+
+2. CREATE THE DOCKERFILE
+
+nano Dockerfile
+
+Enter:
+
+FROM ubuntu:latest
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+CMD ["bash"]
+
+Save the file and exit the editor.
+
+3. BUILD THE IMAGE
+
+sudo docker build -t ubuntu-curl:v1 .
+
+4. RUN IT AND VERIFY CURL
+
+sudo docker run -it --name ubuntu-curl-container ubuntu-curl:v1
+
+Inside the container:
+
+curl --version
+curl -fL https://example.com
+exit
+
+PART C: COMPARE IMAGE SIZES
+
+sudo docker images alpine-curl ubuntu-curl
+
+Alternative formatted output:
+
+sudo docker image ls --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}' alpine-curl ubuntu-curl
+
+EXPECTED RESULT
+Both images should build successfully and curl should be available inside each container. The Alpine-based image will generally be smaller, although actual sizes depend on image versions, platform, and installed packages.
+
+CONCEPTS
+- FROM selects a base image.
+- RUN executes during image building.
+- WORKDIR sets the working directory.
+- CMD specifies the default runtime command.
+- docker build -t IMAGE:TAG . builds an image from the current directory.
+- apk is used on Alpine; apt-get is used on Ubuntu.

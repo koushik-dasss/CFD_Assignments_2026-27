@@ -1,0 +1,61 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q1
+Docker container creation and inspection
+
+PURPOSE
+Create web-server, database, and cache containers. Display container ID, name, image, status, published ports, and IP address. Show running containers and all containers.
+
+1. CREATE THE CONTAINERS
+
+sudo docker run -d --name web-server -p 8081:80 nginx
+
+sudo docker run -d --name database \
+  -e MYSQL_ROOT_PASSWORD='RootPass_ChangeMe123' \
+  mysql:8
+
+sudo docker run -d --name cache redis
+
+NOTE
+The MySQL root-password environment variable is required when initializing a fresh MySQL data directory. Use a practice password only for this assignment.
+
+2. DISPLAY ID, NAME, IMAGE, STATUS, AND PUBLISHED PORTS
+
+sudo docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+
+To include stopped containers as well:
+
+sudo docker ps -a --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+
+3. DISPLAY CONTAINER IP ADDRESSES
+
+sudo docker inspect -f '{{.Name}} -> {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' web-server database cache
+
+4. INSPECT A CONTAINER IN DETAIL
+
+sudo docker inspect web-server
+sudo docker inspect database
+sudo docker inspect cache
+
+5. DISPLAY ONLY RUNNING CONTAINERS
+
+sudo docker ps
+
+6. DISPLAY ALL CONTAINERS, INCLUDING STOPPED CONTAINERS
+
+sudo docker ps -a
+
+7. VERIFY THE WEB SERVER
+
+curl http://localhost:8081
+
+EXPECTED RESULT
+The command should return the default Nginx HTML page if the web-server container is running and host port 8081 is available.
+
+CONCEPTS
+- docker run creates and starts a container.
+- -d runs it in the background.
+- --name assigns a readable container name.
+- -p HOST_PORT:CONTAINER_PORT publishes a container port to the host.
+- docker ps lists running containers; docker ps -a also lists stopped containers.
+- docker inspect provides detailed configuration, state, and network information.
+- IP addresses and container IDs are assigned dynamically; record the values from your own system.

@@ -1,0 +1,65 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q3
+CPU and memory monitoring
+
+PURPOSE
+Create two Nginx containers, generate continuous CPU activity in container-a, monitor both containers, stop the CPU-intensive process, and observe resource usage again.
+
+1. CREATE BOTH CONTAINERS
+
+sudo docker run -d --name container-a nginx
+sudo docker run -d --name container-b nginx
+sudo docker ps
+
+2. ENTER CONTAINER-A
+
+sudo docker exec -it container-a sh
+
+3. GENERATE CPU ACTIVITY INSIDE CONTAINER-A
+
+while :; do :; done &
+
+Store the process ID:
+
+echo $! > /tmp/cpu.pid
+
+Exit the container shell:
+
+exit
+
+The background loop repeatedly executes a no-operation command and consumes CPU. It should not be run on the host; run it inside container-a as instructed.
+
+4. MONITOR CPU AND MEMORY
+
+sudo docker stats container-a container-b
+
+For a formatted view:
+
+sudo docker stats --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}' container-a container-b
+
+5. VIEW PROCESSES
+
+sudo docker top container-a
+sudo docker top container-b
+
+6. STOP THE CPU-INTENSIVE PROCESS
+
+sudo docker exec container-a sh -c 'kill "$(cat /tmp/cpu.pid)"'
+
+7. OBSERVE RESOURCE USAGE AGAIN
+
+sudo docker stats container-a container-b
+
+8. VERIFY THE PROCESS LIST
+
+sudo docker top container-a
+
+EXPECTED RESULT
+Before terminating the loop, container-a should generally show higher CPU use than container-b. After terminating the loop, container-a's CPU use should fall substantially. Exact percentages and memory values depend on the host.
+
+CONCEPTS
+- docker stats displays live resource usage.
+- docker top lists processes in a container.
+- docker exec runs a command inside a running container.
+- kill sends a signal to a process.
+- Stopping the CPU-intensive process is different from stopping the entire container.

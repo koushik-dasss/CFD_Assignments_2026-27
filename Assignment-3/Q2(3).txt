@@ -1,0 +1,76 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q2
+Diagnosing incorrect Nginx port mapping
+
+PURPOSE
+Use docker ps, docker logs, docker inspect, and docker port to identify why Nginx is inaccessible when the wrong container port is published.
+
+CONCEPT
+Nginx in the official image listens on container port 80. Port mapping is written as:
+-p HOST_PORT:CONTAINER_PORT
+
+Therefore, -p 8085:80 is correct. -p 8085:8085 forwards traffic to container port 8085, where Nginx is not listening by default.
+
+IMPORTANT
+The assignment first uses host port 8085 for college-web and then reuses host port 8085 for college-web-error. Both cannot normally publish the same host port at the same time. Remove the first container before demonstrating the faulty mapping.
+
+1. CREATE THE CORRECT CONTAINER
+
+sudo docker run -d --name college-web -p 8085:80 nginx
+sudo docker ps
+sudo docker port college-web
+curl http://localhost:8085
+
+2. REMOVE IT TO FREE HOST PORT 8085
+
+sudo docker rm -f college-web
+
+3. CREATE THE INTENTIONALLY INCORRECT MAPPING
+
+sudo docker run -d --name college-web-error -p 8085:8085 nginx
+
+4. CHECK CONTAINER STATUS AND PORTS
+
+sudo docker ps
+sudo docker port college-web-error
+
+5. CHECK LOGS
+
+sudo docker logs college-web-error
+
+Nginx may report normal startup messages. This does not prove that the host-to-container port mapping is correct.
+
+6. INSPECT THE CONTAINER
+
+sudo docker inspect college-web-error
+
+Show port configuration only:
+
+sudo docker inspect -f '{{json .NetworkSettings.Ports}}' college-web-error
+
+7. TEST THE FAULTY MAPPING
+
+curl --max-time 3 http://localhost:8085
+
+The request should fail or time out because host port 8085 is forwarded to container port 8085, but Nginx listens on container port 80.
+
+8. REMOVE THE FAULTY CONTAINER AND RECREATE IT CORRECTLY
+
+sudo docker rm -f college-web-error
+sudo docker run -d --name college-web -p 8085:80 nginx
+
+9. VERIFY THE FIX
+
+sudo docker ps
+sudo docker port college-web
+curl http://localhost:8085
+
+EXPECTED RESULT
+The correct mapping is 80/tcp -> host port 8085. curl should return the default Nginx HTML page.
+
+CONCEPTS
+- A running container can still have an incorrect port mapping.
+- docker logs shows output from the container's main process.
+- docker inspect shows configured ports and container state.
+- docker port displays published mappings.
+- If the first command fails with "port is already allocated", another process/container is already using host port 8085.

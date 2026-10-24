@@ -1,0 +1,172 @@
+CSE 4630: CONTAINERIZATION FOR DEVELOPERS
+ASSIGNMENT 3 - Q9
+Node.js application behind an Nginx reverse proxy
+
+PURPOSE
+Build a Node.js/Express application with / and /students endpoints. Users must access it through Nginx. Do not publish Node.js port 3000 to the host.
+
+1. CREATE THE PROJECT
+
+mkdir -p ~/CFD-Assignment-3/q9/node-app
+cd ~/CFD-Assignment-3/q9/node-app
+
+2. CREATE package.json
+
+nano package.json
+
+Enter:
+
+{
+  "name": "student-app",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
+
+Save and exit.
+
+3. CREATE server.js
+
+nano server.js
+
+Enter:
+
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) =>
+    res.send("Student Application is running")
+);
+
+app.get("/students", (req, res) => res.json([
+    { id: 1, name: "Student A" },
+    { id: 2, name: "Student B" }
+]));
+
+app.listen(3000, () =>
+    console.log("Server running on port 3000")
+);
+
+Save and exit.
+
+4. CREATE THE DOCKERFILE
+
+nano Dockerfile
+
+Enter:
+
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --omit=dev
+COPY server.js .
+EXPOSE 3000
+CMD ["npm", "start"]
+
+Save and exit.
+
+5. BUILD THE IMAGE
+
+sudo docker build -t student-app:v1 .
+
+6. CREATE THE NETWORK
+
+sudo docker network create student-network
+
+If it already exists, reuse it.
+
+7. RUN THE NODE.JS CONTAINER WITHOUT PUBLISHING PORT 3000
+
+sudo docker run -d \
+  --name student-app \
+  --network student-network \
+  student-app:v1
+
+Do not add -p 3000:3000.
+
+8. VERIFY THE APPLICATION INTERNALLY
+
+sudo docker exec student-app node -e 'fetch("http://127.0.0.1:3000/").then(r=>r.text()).then(console.log).catch(e=>{console.error(e);process.exit(1)})'
+
+Expected:
+Student Application is running
+
+sudo docker exec student-app node -e 'fetch("http://127.0.0.1:3000/students").then(r=>r.text()).then(console.log).catch(e=>{console.error(e);process.exit(1)})'
+
+Expected:
+[{"id":1,"name":"Student A"},{"id":2,"name":"Student B"}]
+
+9. CREATE THE NGINX CONFIGURATION
+
+Move to the Q9 directory:
+
+cd ~/CFD-Assignment-3/q9
+nano student-nginx.conf
+
+Enter:
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://student-app:3000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+Save and exit.
+
+10. VALIDATE NGINX CONFIGURATION
+
+sudo docker run --rm \
+  --network student-network \
+  --mount "type=bind,source=$PWD/student-nginx.conf,target=/etc/nginx/conf.d/default.conf,readonly" \
+  nginx:alpine nginx -t
+
+11. RUN NGINX AND PUBLISH ONLY ITS PORT
+
+sudo docker run -d \
+  --name student-nginx \
+  --network student-network \
+  -p 8080:80 \
+  --mount "type=bind,source=$PWD/student-nginx.conf,target=/etc/nginx/conf.d/default.conf,readonly" \
+  nginx:alpine
+
+12. VERIFY ROOT ENDPOINT THROUGH NGINX
+
+curl -i http://localhost:8080/
+
+Expected body:
+Student Application is running
+
+13. VERIFY /students THROUGH NGINX
+
+curl -i http://localhost:8080/students
+
+Expected JSON:
+[{"id":1,"name":"Student A"},{"id":2,"name":"Student B"}]
+
+14. VERIFY PORTS AND NETWORK
+
+sudo docker ps
+sudo docker port student-nginx
+sudo docker port student-app
+sudo docker network inspect student-network
+
+Only student-nginx should publish host port 8080. student-app should have no published host port.
+
+CONCEPTS
+- Express defines HTTP routes.
+- Dockerfile instructions package the application and dependencies.
+- Nginx proxies requests to student-app:3000 over the shared network.
+- EXPOSE 3000 documents the port but does not publish it to the host.
